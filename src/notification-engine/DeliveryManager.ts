@@ -16,7 +16,7 @@ import {
   ScheduledNotification,
   NotificationHistory,
   UserResponse,
-  NOTIFICATION_CONSTANTS
+  NOTIFICATION_CONSTANTS,
 } from '../types';
 
 interface DeliveryChannel {
@@ -25,8 +25,14 @@ interface DeliveryChannel {
   maxRetries: number;
   retryDelayMinutes: number;
   isAvailable: () => Promise<boolean>;
-  deliver: (notification: Notification, userPreferences: UserPreferences) => Promise<DeliveryResult>;
-  validate: (notification: Notification, userPreferences: UserPreferences) => Promise<boolean>;
+  deliver: (
+    notification: Notification,
+    userPreferences: UserPreferences
+  ) => Promise<DeliveryResult>;
+  validate: (
+    notification: Notification,
+    userPreferences: UserPreferences
+  ) => Promise<boolean>;
 }
 
 interface DeliveryResult {
@@ -82,7 +88,10 @@ export class DeliveryManager {
     userPreferences: UserPreferences
   ): Promise<ServiceResponse<NotificationResult>> {
     try {
-      const deliveryMethods = this.selectDeliveryMethods(userPreferences, notification);
+      const deliveryMethods = this.selectDeliveryMethods(
+        userPreferences,
+        notification
+      );
       let lastError: string = '';
 
       for (const method of deliveryMethods) {
@@ -103,19 +112,26 @@ export class DeliveryManager {
           }
 
           // Attempt delivery
-          const deliveryResult = await channel.deliver(notification, userPreferences);
-          
+          const deliveryResult = await channel.deliver(
+            notification,
+            userPreferences
+          );
+
           if (deliveryResult.success) {
-            await this.recordSuccessfulDelivery(notification, method, deliveryResult);
-            
+            await this.recordSuccessfulDelivery(
+              notification,
+              method,
+              deliveryResult
+            );
+
             return {
               success: true,
               data: {
                 success: true,
                 notificationId: notification.metadata.id,
                 deliveryMethod: method,
-                retryCount: 0
-              }
+                retryCount: 0,
+              },
             };
           } else {
             lastError = deliveryResult.error || `${method} delivery failed`;
@@ -137,8 +153,8 @@ export class DeliveryManager {
           details: lastError,
           timestamp: new Date(),
           userId: notification.metadata.userId,
-          issueKey: notification.metadata.issueKey
-        }
+          issueKey: notification.metadata.issueKey,
+        },
       };
     } catch (error: any) {
       return {
@@ -149,8 +165,8 @@ export class DeliveryManager {
           details: error.message,
           timestamp: new Date(),
           userId: notification.metadata.userId,
-          issueKey: notification.metadata.issueKey
-        }
+          issueKey: notification.metadata.issueKey,
+        },
       };
     }
   }
@@ -165,19 +181,30 @@ export class DeliveryManager {
   ): Promise<ServiceResponse<NotificationResult[]>> {
     try {
       const results: NotificationResult[] = [];
-      
+
       // Check if batch delivery is supported
-      if (userPreferences.notificationSettings.preferredDeliveryMethods.includes('in-app')) {
-        const batchResult = await this.deliverInAppBatch(notifications, userPreferences, batchKey);
+      if (
+        userPreferences.notificationSettings.preferredDeliveryMethods.includes(
+          'in-app'
+        )
+      ) {
+        const batchResult = await this.deliverInAppBatch(
+          notifications,
+          userPreferences,
+          batchKey
+        );
         return {
           success: true,
-          data: batchResult.data || []
+          data: batchResult.data || [],
         };
       }
 
       // Fall back to individual delivery
       for (const notification of notifications) {
-        const result = await this.deliverNotification(notification, userPreferences);
+        const result = await this.deliverNotification(
+          notification,
+          userPreferences
+        );
         if (result.data) {
           results.push(result.data);
         }
@@ -185,7 +212,7 @@ export class DeliveryManager {
 
       return {
         success: true,
-        data: results
+        data: results,
       };
     } catch (error: any) {
       return {
@@ -194,8 +221,8 @@ export class DeliveryManager {
           code: 'BATCH_DELIVERY_ERROR',
           message: 'Failed to deliver notification batch',
           details: error.message,
-          timestamp: new Date()
-        }
+          timestamp: new Date(),
+        },
       };
     }
   }
@@ -242,8 +269,8 @@ export class DeliveryManager {
           message: 'Failed to process delivery queue',
           details: error.message,
           timestamp: new Date(),
-          userId
-        }
+          userId,
+        },
       };
     }
   }
@@ -259,7 +286,9 @@ export class DeliveryManager {
     try {
       // Find the notification in delivery history
       for (const [issueKey, history] of this.deliveryHistory.entries()) {
-        const notification = history.notifications.find(n => n.id === notificationId);
+        const notification = history.notifications.find(
+          n => n.id === notificationId
+        );
         if (notification) {
           // Update notification metadata
           switch (response) {
@@ -275,13 +304,21 @@ export class DeliveryManager {
               break;
             case 'snoozed':
               // Reschedule notification
-              await this.rescheduleNotification(notificationId, addMinutes(timestamp, 60));
+              await this.rescheduleNotification(
+                notificationId,
+                addMinutes(timestamp, 60)
+              );
               break;
           }
 
           // Update effectiveness metrics
-          await this.updateEffectivenessMetrics(issueKey, history, response, timestamp);
-          
+          await this.updateEffectivenessMetrics(
+            issueKey,
+            history,
+            response,
+            timestamp
+          );
+
           return { success: true };
         }
       }
@@ -291,8 +328,8 @@ export class DeliveryManager {
         error: {
           code: 'NOTIFICATION_NOT_FOUND',
           message: 'Notification not found in delivery history',
-          timestamp: new Date()
-        }
+          timestamp: new Date(),
+        },
       };
     } catch (error: any) {
       return {
@@ -301,8 +338,8 @@ export class DeliveryManager {
           code: 'RESPONSE_RECORDING_ERROR',
           message: 'Failed to record user response',
           details: error.message,
-          timestamp: new Date()
-        }
+          timestamp: new Date(),
+        },
       };
     }
   }
@@ -310,7 +347,10 @@ export class DeliveryManager {
   /**
    * Gets delivery statistics for analytics
    */
-  async getDeliveryStatistics(userId: string, days: number = 30): Promise<ServiceResponse<any>> {
+  async getDeliveryStatistics(
+    userId: string,
+    days: number = 30
+  ): Promise<ServiceResponse<any>> {
     try {
       const queue = this.deliveryQueues.get(userId);
       if (!queue) {
@@ -321,8 +361,8 @@ export class DeliveryManager {
             successfulDeliveries: 0,
             failedDeliveries: 0,
             averageRetries: 0,
-            preferredMethods: []
-          }
+            preferredMethods: [],
+          },
         };
       }
 
@@ -331,16 +371,24 @@ export class DeliveryManager {
         attempt => attempt.scheduledFor >= cutoffDate
       );
 
-      const successful = recentAttempts.filter(attempt => attempt.result?.success);
-      const failed = recentAttempts.filter(attempt => attempt.result && !attempt.result.success);
-      
+      const successful = recentAttempts.filter(
+        attempt => attempt.result?.success
+      );
+      const failed = recentAttempts.filter(
+        attempt => attempt.result && !attempt.result.success
+      );
+
       const methodCounts = _.countBy(successful, 'method');
       const preferredMethods = Object.entries(methodCounts)
-        .sort(([,a], [,b]) => b - a)
+        .sort(([, a], [, b]) => b - a)
         .map(([method]) => method);
 
-      const totalRetries = recentAttempts.reduce((sum, attempt) => sum + attempt.attemptNumber - 1, 0);
-      const averageRetries = recentAttempts.length > 0 ? totalRetries / recentAttempts.length : 0;
+      const totalRetries = recentAttempts.reduce(
+        (sum, attempt) => sum + attempt.attemptNumber - 1,
+        0
+      );
+      const averageRetries =
+        recentAttempts.length > 0 ? totalRetries / recentAttempts.length : 0;
 
       return {
         success: true,
@@ -350,8 +398,11 @@ export class DeliveryManager {
           failedDeliveries: failed.length,
           averageRetries,
           preferredMethods,
-          successRate: recentAttempts.length > 0 ? successful.length / recentAttempts.length : 0
-        }
+          successRate:
+            recentAttempts.length > 0
+              ? successful.length / recentAttempts.length
+              : 0,
+        },
       };
     } catch (error: any) {
       return {
@@ -361,8 +412,8 @@ export class DeliveryManager {
           message: 'Failed to get delivery statistics',
           details: error.message,
           timestamp: new Date(),
-          userId
-        }
+          userId,
+        },
       };
     }
   }
@@ -376,7 +427,7 @@ export class DeliveryManager {
       retryDelayMinutes: 5,
       isAvailable: async () => true, // Always available for in-app
       deliver: this.deliverInApp.bind(this),
-      validate: async (notification, userPreferences) => true
+      validate: async (notification, userPreferences) => true,
     });
 
     // Banner Notification Channel
@@ -389,8 +440,11 @@ export class DeliveryManager {
       deliver: this.deliverBanner.bind(this),
       validate: async (notification, userPreferences) => {
         // Only for high priority notifications
-        return notification.metadata.priority === 'high' || notification.metadata.priority === 'urgent';
-      }
+        return (
+          notification.metadata.priority === 'high' ||
+          notification.metadata.priority === 'urgent'
+        );
+      },
     });
 
     // Modal Notification Channel (for urgent items only)
@@ -404,7 +458,7 @@ export class DeliveryManager {
       validate: async (notification, userPreferences) => {
         // Only for urgent notifications
         return notification.metadata.priority === 'urgent';
-      }
+      },
     });
 
     // Email Notification Channel
@@ -420,7 +474,7 @@ export class DeliveryManager {
       deliver: this.deliverEmail.bind(this),
       validate: async (notification, userPreferences) => {
         return userPreferences.email ? true : false;
-      }
+      },
     });
 
     // Webhook Notification Channel
@@ -434,7 +488,7 @@ export class DeliveryManager {
       validate: async (notification, userPreferences) => {
         // Check if user has webhook configured
         return true; // Would check user's webhook settings
-      }
+      },
     });
   }
 
@@ -442,7 +496,8 @@ export class DeliveryManager {
     userPreferences: UserPreferences,
     notification: Notification
   ): DeliveryMethod[] {
-    const preferredMethods = userPreferences.notificationSettings.preferredDeliveryMethods;
+    const preferredMethods =
+      userPreferences.notificationSettings.preferredDeliveryMethods;
     const priority = notification.metadata.priority;
 
     // Sort methods by user preference and priority appropriateness
@@ -450,7 +505,7 @@ export class DeliveryManager {
       .map(method => ({
         method,
         channel: this.deliveryChannels.get(method),
-        score: this.calculateMethodScore(method, priority, userPreferences)
+        score: this.calculateMethodScore(method, priority, userPreferences),
       }))
       .filter(item => item.channel)
       .sort((a, b) => b.score - a.score)
@@ -465,10 +520,13 @@ export class DeliveryManager {
     userPreferences: UserPreferences
   ): number {
     let score = 0;
-    
+
     // Base preference score
-    const methodIndex = userPreferences.notificationSettings.preferredDeliveryMethods.indexOf(method);
-    score += methodIndex >= 0 ? (10 - methodIndex) : 0;
+    const methodIndex =
+      userPreferences.notificationSettings.preferredDeliveryMethods.indexOf(
+        method
+      );
+    score += methodIndex >= 0 ? 10 - methodIndex : 0;
 
     // Priority appropriateness
     if (priority === 'urgent' && method === 'modal') score += 20;
@@ -486,22 +544,22 @@ export class DeliveryManager {
     try {
       // In a real implementation, this would use Forge UI to display the notification
       // For now, simulate successful delivery
-      
+
       return {
         success: true,
         deliveryId: `in-app-${Date.now()}`,
         timestamp: new Date(),
         metadata: {
           location: 'notification-panel',
-          duration: 5000 // 5 seconds
-        }
+          duration: 5000, // 5 seconds
+        },
       };
     } catch (error: any) {
       return {
         success: false,
         deliveryId: '',
         timestamp: new Date(),
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -518,15 +576,15 @@ export class DeliveryManager {
         timestamp: new Date(),
         metadata: {
           location: 'top-banner',
-          duration: 10000 // 10 seconds
-        }
+          duration: 10000, // 10 seconds
+        },
       };
     } catch (error: any) {
       return {
         success: false,
         deliveryId: '',
         timestamp: new Date(),
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -543,15 +601,15 @@ export class DeliveryManager {
         timestamp: new Date(),
         metadata: {
           location: 'center-modal',
-          dismissible: true
-        }
+          dismissible: true,
+        },
       };
     } catch (error: any) {
       return {
         success: false,
         deliveryId: '',
         timestamp: new Date(),
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -568,15 +626,15 @@ export class DeliveryManager {
         timestamp: new Date(),
         metadata: {
           recipient: userPreferences.email,
-          subject: notification.content.title
-        }
+          subject: notification.content.title,
+        },
       };
     } catch (error: any) {
       return {
         success: false,
         deliveryId: '',
         timestamp: new Date(),
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -593,15 +651,15 @@ export class DeliveryManager {
         timestamp: new Date(),
         metadata: {
           endpoint: 'user-configured-webhook',
-          method: 'POST'
-        }
+          method: 'POST',
+        },
       };
     } catch (error: any) {
       return {
         success: false,
         deliveryId: '',
         timestamp: new Date(),
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -613,19 +671,27 @@ export class DeliveryManager {
   ): Promise<ServiceResponse<NotificationResult[]>> {
     try {
       const results: NotificationResult[] = [];
-      
+
       // Group notifications by type for better presentation
-      const groupedNotifications = _.groupBy(notifications, 'metadata.context.type');
-      
-      for (const [type, typeNotifications] of Object.entries(groupedNotifications)) {
-        const batchResult = await this.createBatchNotification(typeNotifications, batchKey);
-        
+      const groupedNotifications = _.groupBy(
+        notifications,
+        'metadata.context.type'
+      );
+
+      for (const [type, typeNotifications] of Object.entries(
+        groupedNotifications
+      )) {
+        const batchResult = await this.createBatchNotification(
+          typeNotifications,
+          batchKey
+        );
+
         for (const notification of typeNotifications) {
           results.push({
             success: true,
             notificationId: notification.metadata.id,
             deliveryMethod: 'in-app',
-            retryCount: 0
+            retryCount: 0,
           });
         }
       }
@@ -638,8 +704,8 @@ export class DeliveryManager {
           code: 'BATCH_DELIVERY_ERROR',
           message: 'Failed to deliver batch notifications',
           details: error.message,
-          timestamp: new Date()
-        }
+          timestamp: new Date(),
+        },
       };
     }
   }
@@ -658,7 +724,7 @@ export class DeliveryManager {
     error: string
   ): Promise<void> {
     const userId = notification.metadata.userId;
-    
+
     if (!this.deliveryQueues.has(userId)) {
       this.deliveryQueues.set(userId, {
         userId,
@@ -666,28 +732,34 @@ export class DeliveryManager {
         processing: false,
         lastProcessed: new Date(),
         errorCount: 0,
-        successCount: 0
+        successCount: 0,
       });
     }
 
     const queue = this.deliveryQueues.get(userId)!;
-    const deliveryMethods = this.selectDeliveryMethods(userPreferences, notification);
-    
+    const deliveryMethods = this.selectDeliveryMethods(
+      userPreferences,
+      notification
+    );
+
     for (let i = 0; i < NOTIFICATION_CONSTANTS.MAX_RETRY_ATTEMPTS; i++) {
       const method = deliveryMethods[i % deliveryMethods.length];
-      const retryDelay = this.retryIntervals[Math.min(i, this.retryIntervals.length - 1)];
-      
+      const retryDelay =
+        this.retryIntervals[Math.min(i, this.retryIntervals.length - 1)];
+
       queue.attempts.push({
         notificationId: notification.metadata.id,
         method,
         attemptNumber: i + 1,
         scheduledFor: addMinutes(new Date(), retryDelay),
-        error: i === 0 ? error : undefined
+        error: i === 0 ? error : undefined,
       });
     }
   }
 
-  private async processDeliveryAttempt(attempt: DeliveryAttempt): Promise<void> {
+  private async processDeliveryAttempt(
+    attempt: DeliveryAttempt
+  ): Promise<void> {
     // This would retrieve the original notification and retry delivery
     // Simplified for this implementation
   }
@@ -698,7 +770,7 @@ export class DeliveryManager {
     result: DeliveryResult
   ): Promise<void> {
     const issueKey = notification.metadata.issueKey;
-    
+
     if (!this.deliveryHistory.has(issueKey)) {
       this.deliveryHistory.set(issueKey, {
         issueKey,
@@ -706,7 +778,7 @@ export class DeliveryManager {
         lastNudgeDate: new Date(),
         totalNudgeCount: 0,
         effectivenessScore: 0,
-        userResponsePattern: []
+        userResponsePattern: [],
       });
     }
 
@@ -717,7 +789,10 @@ export class DeliveryManager {
     history.totalNudgeCount++;
   }
 
-  private async rescheduleNotification(notificationId: string, newTime: Date): Promise<void> {
+  private async rescheduleNotification(
+    notificationId: string,
+    newTime: Date
+  ): Promise<void> {
     // Implementation would reschedule the notification
   }
 
@@ -729,12 +804,13 @@ export class DeliveryManager {
   ): Promise<void> {
     // Update effectiveness scoring based on user response
     history.userResponsePattern.push(response);
-    
+
     // Calculate effectiveness score (simplified)
     const positiveResponses = history.userResponsePattern.filter(
       r => r === 'acknowledged' || r === 'actioned'
     ).length;
-    
-    history.effectivenessScore = positiveResponses / history.userResponsePattern.length;
+
+    history.effectivenessScore =
+      positiveResponses / history.userResponsePattern.length;
   }
 }

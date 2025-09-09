@@ -13,7 +13,7 @@ import {
   TeamMetrics,
   DeadlineInfo,
   ServiceResponse,
-  GentleNudgeError
+  GentleNudgeError,
 } from '../types';
 
 interface JiraIssue {
@@ -107,9 +107,21 @@ interface IssueSearchOptions {
 
 export class JiraApiService {
   private readonly DEFAULT_FIELDS = [
-    'summary', 'status', 'priority', 'assignee', 'reporter', 'created',
-    'updated', 'duedate', 'project', 'issuetype', 'description',
-    'components', 'labels', 'resolution', 'resolutiondate'
+    'summary',
+    'status',
+    'priority',
+    'assignee',
+    'reporter',
+    'created',
+    'updated',
+    'duedate',
+    'project',
+    'issuetype',
+    'description',
+    'components',
+    'labels',
+    'resolution',
+    'resolutiondate',
   ];
 
   private readonly API_RATE_LIMIT = 1000; // ms between requests
@@ -121,16 +133,18 @@ export class JiraApiService {
   async getIssue(issueKey: string): Promise<ServiceResponse<JiraIssueData>> {
     try {
       await this.enforceRateLimit();
-      
+
       const response = await requestJira(`/rest/api/3/issue/${issueKey}`, {
         method: 'GET',
         headers: {
-          'Accept': 'application/json',
-        }
+          Accept: 'application/json',
+        },
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch issue: ${response.status} ${response.statusText}`);
+        throw new Error(
+          `Failed to fetch issue: ${response.status} ${response.statusText}`
+        );
       }
 
       const issue: JiraIssue = await response.json();
@@ -145,8 +159,8 @@ export class JiraApiService {
           message: 'Failed to fetch issue from Jira',
           details: error.message,
           timestamp: new Date(),
-          issueKey
-        }
+          issueKey,
+        },
       };
     }
   }
@@ -154,31 +168,41 @@ export class JiraApiService {
   /**
    * Searches for issues based on JQL query
    */
-  async searchIssues(options: IssueSearchOptions): Promise<ServiceResponse<JiraIssueData[]>> {
+  async searchIssues(
+    options: IssueSearchOptions
+  ): Promise<ServiceResponse<JiraIssueData[]>> {
     try {
       await this.enforceRateLimit();
 
       const params = new URLSearchParams();
-      
+
       if (options.jql) params.append('jql', options.jql);
       if (options.fields) params.append('fields', options.fields.join(','));
       if (options.expand) params.append('expand', options.expand.join(','));
-      if (options.maxResults) params.append('maxResults', options.maxResults.toString());
+      if (options.maxResults)
+        params.append('maxResults', options.maxResults.toString());
       if (options.startAt) params.append('startAt', options.startAt.toString());
 
-      const response = await requestJira(`/rest/api/3/search?${params.toString()}`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
+      const response = await requestJira(
+        `/rest/api/3/search?${params.toString()}`,
+        {
+          method: 'GET',
+          headers: {
+            Accept: 'application/json',
+          },
         }
-      });
+      );
 
       if (!response.ok) {
-        throw new Error(`Failed to search issues: ${response.status} ${response.statusText}`);
+        throw new Error(
+          `Failed to search issues: ${response.status} ${response.statusText}`
+        );
       }
 
       const searchResult: JiraSearchResult = await response.json();
-      const issues = searchResult.issues.map(issue => this.transformIssueData(issue));
+      const issues = searchResult.issues.map(issue =>
+        this.transformIssueData(issue)
+      );
 
       return { success: true, data: issues };
     } catch (error: any) {
@@ -188,8 +212,8 @@ export class JiraApiService {
           code: 'JIRA_SEARCH_ERROR',
           message: 'Failed to search issues in Jira',
           details: error.message,
-          timestamp: new Date()
-        }
+          timestamp: new Date(),
+        },
       };
     }
   }
@@ -197,30 +221,35 @@ export class JiraApiService {
   /**
    * Gets all issues assigned to a specific user
    */
-  async getUserAssignedIssues(accountId: string): Promise<ServiceResponse<JiraIssueData[]>> {
+  async getUserAssignedIssues(
+    accountId: string
+  ): Promise<ServiceResponse<JiraIssueData[]>> {
     const jql = `assignee = "${accountId}" AND resolution = Unresolved ORDER BY updated DESC`;
-    
+
     return this.searchIssues({
       jql,
       fields: this.DEFAULT_FIELDS,
-      maxResults: 100
+      maxResults: 100,
     });
   }
 
   /**
    * Gets stale issues (not updated for specified days) for a user
    */
-  async getUserStaleIssues(accountId: string, staleDays: number = 3): Promise<ServiceResponse<JiraIssueData[]>> {
+  async getUserStaleIssues(
+    accountId: string,
+    staleDays: number = 3
+  ): Promise<ServiceResponse<JiraIssueData[]>> {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - staleDays);
     const cutoffString = cutoffDate.toISOString().split('T')[0]; // YYYY-MM-DD format
 
     const jql = `assignee = "${accountId}" AND resolution = Unresolved AND updated < "${cutoffString}" ORDER BY updated ASC`;
-    
+
     return this.searchIssues({
       jql,
       fields: this.DEFAULT_FIELDS,
-      maxResults: 50
+      maxResults: 50,
     });
   }
 
@@ -228,7 +257,7 @@ export class JiraApiService {
    * Gets issues approaching their due date
    */
   async getUserIssuesApproachingDeadline(
-    accountId: string, 
+    accountId: string,
     warningDays: number = 2
   ): Promise<ServiceResponse<JiraIssueData[]>> {
     const warningDate = new Date();
@@ -236,18 +265,20 @@ export class JiraApiService {
     const warningString = warningDate.toISOString().split('T')[0];
 
     const jql = `assignee = "${accountId}" AND resolution = Unresolved AND due <= "${warningString}" AND due >= now() ORDER BY due ASC`;
-    
+
     return this.searchIssues({
       jql,
       fields: this.DEFAULT_FIELDS,
-      maxResults: 20
+      maxResults: 20,
     });
   }
 
   /**
    * Calculates user workload information
    */
-  async calculateUserWorkload(accountId: string): Promise<ServiceResponse<UserWorkloadInfo>> {
+  async calculateUserWorkload(
+    accountId: string
+  ): Promise<ServiceResponse<UserWorkloadInfo>> {
     try {
       // Get all assigned issues
       const assignedResult = await this.getUserAssignedIssues(accountId);
@@ -260,17 +291,19 @@ export class JiraApiService {
 
       // Calculate metrics
       const totalAssignedIssues = issues.length;
-      const overdueIssues = issues.filter(issue => 
-        issue.dueDate && issue.dueDate < now
+      const overdueIssues = issues.filter(
+        issue => issue.dueDate && issue.dueDate < now
       ).length;
 
       // Calculate average days since last update
-      const daysSinceUpdate = issues.map(issue => 
+      const daysSinceUpdate = issues.map(issue =>
         differenceInDays(now, issue.updated)
       );
-      const staleDaysAverage = daysSinceUpdate.length > 0 
-        ? daysSinceUpdate.reduce((sum, days) => sum + days, 0) / daysSinceUpdate.length 
-        : 0;
+      const staleDaysAverage =
+        daysSinceUpdate.length > 0
+          ? daysSinceUpdate.reduce((sum, days) => sum + days, 0) /
+            daysSinceUpdate.length
+          : 0;
 
       // Calculate recent activity score (higher is better)
       const recentActivityScore = this.calculateActivityScore(issues, now);
@@ -287,7 +320,7 @@ export class JiraApiService {
         overdueIssues,
         staleDaysAverage,
         recentActivityScore,
-        currentCapacityLevel
+        currentCapacityLevel,
       };
 
       return { success: true, data: workloadInfo };
@@ -299,8 +332,8 @@ export class JiraApiService {
           message: 'Failed to calculate user workload',
           details: error.message,
           timestamp: new Date(),
-          userId: accountId
-        }
+          userId: accountId,
+        },
       };
     }
   }
@@ -308,7 +341,9 @@ export class JiraApiService {
   /**
    * Gets team metrics for a project
    */
-  async getTeamMetrics(projectKey: string): Promise<ServiceResponse<TeamMetrics>> {
+  async getTeamMetrics(
+    projectKey: string
+  ): Promise<ServiceResponse<TeamMetrics>> {
     try {
       // Get project information
       const projectResult = await this.getProject(projectKey);
@@ -319,7 +354,7 @@ export class JiraApiService {
       // Get project issues for metrics calculation
       const issuesResult = await this.searchIssues({
         jql: `project = "${projectKey}" ORDER BY updated DESC`,
-        maxResults: 200
+        maxResults: 200,
       });
 
       if (!issuesResult.success || !issuesResult.data) {
@@ -337,8 +372,8 @@ export class JiraApiService {
           code: 'TEAM_METRICS_ERROR',
           message: 'Failed to calculate team metrics',
           details: error.message,
-          timestamp: new Date()
-        }
+          timestamp: new Date(),
+        },
       };
     }
   }
@@ -350,15 +385,20 @@ export class JiraApiService {
     try {
       await this.enforceRateLimit();
 
-      const response = await requestJira(`/rest/api/3/user?accountId=${accountId}`, {
-        method: 'GET',
-        headers: {
-          'Accept': 'application/json',
+      const response = await requestJira(
+        `/rest/api/3/user?accountId=${accountId}`,
+        {
+          method: 'GET',
+          headers: {
+            Accept: 'application/json',
+          },
         }
-      });
+      );
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch user: ${response.status} ${response.statusText}`);
+        throw new Error(
+          `Failed to fetch user: ${response.status} ${response.statusText}`
+        );
       }
 
       const user: JiraUser = await response.json();
@@ -371,8 +411,8 @@ export class JiraApiService {
           message: 'Failed to fetch user from Jira',
           details: error.message,
           timestamp: new Date(),
-          userId: accountId
-        }
+          userId: accountId,
+        },
       };
     }
   }
@@ -387,12 +427,14 @@ export class JiraApiService {
       const response = await requestJira(`/rest/api/3/project/${projectKey}`, {
         method: 'GET',
         headers: {
-          'Accept': 'application/json',
-        }
+          Accept: 'application/json',
+        },
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch project: ${response.status} ${response.statusText}`);
+        throw new Error(
+          `Failed to fetch project: ${response.status} ${response.statusText}`
+        );
       }
 
       const project: JiraProject = await response.json();
@@ -404,8 +446,8 @@ export class JiraApiService {
           code: 'JIRA_PROJECT_FETCH_ERROR',
           message: 'Failed to fetch project from Jira',
           details: error.message,
-          timestamp: new Date()
-        }
+          timestamp: new Date(),
+        },
       };
     }
   }
@@ -419,13 +461,16 @@ export class JiraApiService {
     const now = new Date();
     const daysRemaining = differenceInDays(issue.dueDate, now);
     const hoursRemaining = differenceInHours(issue.dueDate, now);
-    
+
     return {
       dueDate: issue.dueDate,
       daysRemaining: Math.max(0, daysRemaining),
       isOverdue: issue.dueDate < now,
-      slaBreachRisk: this.calculateSlaBreachRisk(hoursRemaining, issue.priority),
-      bufferTime: Math.max(0, hoursRemaining)
+      slaBreachRisk: this.calculateSlaBreachRisk(
+        hoursRemaining,
+        issue.priority
+      ),
+      bufferTime: Math.max(0, hoursRemaining),
     };
   }
 
@@ -439,18 +484,21 @@ export class JiraApiService {
       const response = await requestJira('/rest/api/3/jql/parse', {
         method: 'POST',
         headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ queries: [jql] })
+        body: JSON.stringify({ queries: [jql] }),
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to validate JQL: ${response.status} ${response.statusText}`);
+        throw new Error(
+          `Failed to validate JQL: ${response.status} ${response.statusText}`
+        );
       }
 
       const result = await response.json();
-      const isValid = result.queries && result.queries[0] && result.queries[0].structure;
+      const isValid =
+        result.queries && result.queries[0] && result.queries[0].structure;
 
       return { success: true, data: !!isValid };
     } catch (error: any) {
@@ -460,8 +508,8 @@ export class JiraApiService {
           code: 'JQL_VALIDATION_ERROR',
           message: 'Failed to validate JQL query',
           details: error.message,
-          timestamp: new Date()
-        }
+          timestamp: new Date(),
+        },
       };
     }
   }
@@ -476,15 +524,17 @@ export class JiraApiService {
       reporter: jiraIssue.fields.reporter.accountId,
       created: parseISO(jiraIssue.fields.created),
       updated: parseISO(jiraIssue.fields.updated),
-      dueDate: jiraIssue.fields.duedate ? parseISO(jiraIssue.fields.duedate) : undefined,
+      dueDate: jiraIssue.fields.duedate
+        ? parseISO(jiraIssue.fields.duedate)
+        : undefined,
       project: {
         key: jiraIssue.fields.project.key,
-        name: jiraIssue.fields.project.name
+        name: jiraIssue.fields.project.name,
       },
       issueType: jiraIssue.fields.issuetype.name,
       description: jiraIssue.fields.description,
       components: jiraIssue.fields.components.map(c => c.name),
-      labels: jiraIssue.fields.labels
+      labels: jiraIssue.fields.labels,
     };
   }
 
@@ -514,48 +564,69 @@ export class JiraApiService {
 
     const overdueRatio = totalIssues > 0 ? overdueIssues / totalIssues : 0;
 
-    if (totalIssues <= LIGHT_THRESHOLD && overdueRatio < 0.1 && staleDaysAverage < 3) {
+    if (
+      totalIssues <= LIGHT_THRESHOLD &&
+      overdueRatio < 0.1 &&
+      staleDaysAverage < 3
+    ) {
       return 'light';
-    } else if (totalIssues <= MODERATE_THRESHOLD && overdueRatio < 0.2 && staleDaysAverage < 5) {
+    } else if (
+      totalIssues <= MODERATE_THRESHOLD &&
+      overdueRatio < 0.2 &&
+      staleDaysAverage < 5
+    ) {
       return 'moderate';
-    } else if (totalIssues <= HEAVY_THRESHOLD && overdueRatio < OVERDUE_RATIO_THRESHOLD && staleDaysAverage < STALE_DAYS_THRESHOLD) {
+    } else if (
+      totalIssues <= HEAVY_THRESHOLD &&
+      overdueRatio < OVERDUE_RATIO_THRESHOLD &&
+      staleDaysAverage < STALE_DAYS_THRESHOLD
+    ) {
       return 'heavy';
     } else {
       return 'overloaded';
     }
   }
 
-  private calculateTeamMetricsFromIssues(issues: JiraIssueData[], projectKey: string): TeamMetrics {
+  private calculateTeamMetricsFromIssues(
+    issues: JiraIssueData[],
+    projectKey: string
+  ): TeamMetrics {
     const now = new Date();
-    
+
     // Get unique assignees for team size
-    const assignees = new Set(issues.map(issue => issue.assignee).filter(Boolean));
+    const assignees = new Set(
+      issues.map(issue => issue.assignee).filter(Boolean)
+    );
     const teamSize = assignees.size;
 
     // Calculate resolution time for resolved issues
-    const resolvedIssues = issues.filter(issue => 
-      issue.status.toLowerCase().includes('done') || 
-      issue.status.toLowerCase().includes('resolved') ||
-      issue.status.toLowerCase().includes('closed')
+    const resolvedIssues = issues.filter(
+      issue =>
+        issue.status.toLowerCase().includes('done') ||
+        issue.status.toLowerCase().includes('resolved') ||
+        issue.status.toLowerCase().includes('closed')
     );
 
-    const resolutionTimes = resolvedIssues.map(issue => 
+    const resolutionTimes = resolvedIssues.map(issue =>
       differenceInDays(issue.updated, issue.created)
     );
 
-    const averageResolutionTime = resolutionTimes.length > 0
-      ? resolutionTimes.reduce((sum, time) => sum + time, 0) / resolutionTimes.length
-      : 0;
+    const averageResolutionTime =
+      resolutionTimes.length > 0
+        ? resolutionTimes.reduce((sum, time) => sum + time, 0) /
+          resolutionTimes.length
+        : 0;
 
     // Calculate team velocity (issues resolved per week)
-    const lastWeekResolved = resolvedIssues.filter(issue => 
-      differenceInDays(now, issue.updated) <= 7
+    const lastWeekResolved = resolvedIssues.filter(
+      issue => differenceInDays(now, issue.updated) <= 7
     );
     const teamVelocity = lastWeekResolved.length;
 
     // Calculate completion rate
     const totalIssues = issues.length;
-    const completionRate = totalIssues > 0 ? resolvedIssues.length / totalIssues : 0;
+    const completionRate =
+      totalIssues > 0 ? resolvedIssues.length / totalIssues : 0;
 
     // Simple morale calculation based on team performance
     let morale = 5; // Base neutral morale
@@ -574,20 +645,20 @@ export class JiraApiService {
       averageResolutionTime,
       teamVelocity,
       morale,
-      completionRate
+      completionRate,
     };
   }
 
   private calculateSlaBreachRisk(
-    hoursRemaining: number, 
+    hoursRemaining: number,
     priority: string
   ): 'none' | 'low' | 'medium' | 'high' {
     const priorityMultipliers: Record<string, number> = {
-      'Highest': 0.5,
-      'High': 0.7,
-      'Medium': 1.0,
-      'Low': 1.5,
-      'Lowest': 2.0
+      Highest: 0.5,
+      High: 0.7,
+      Medium: 1.0,
+      Low: 1.5,
+      Lowest: 2.0,
     };
 
     const multiplier = priorityMultipliers[priority] || 1.0;
@@ -602,13 +673,13 @@ export class JiraApiService {
   private async enforceRateLimit(): Promise<void> {
     const now = Date.now();
     const timeSinceLastRequest = now - this.lastRequestTime;
-    
+
     if (timeSinceLastRequest < this.API_RATE_LIMIT) {
-      await new Promise(resolve => 
+      await new Promise(resolve =>
         setTimeout(resolve, this.API_RATE_LIMIT - timeSinceLastRequest)
       );
     }
-    
+
     this.lastRequestTime = Date.now();
   }
 }

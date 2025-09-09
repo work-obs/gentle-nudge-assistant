@@ -44,7 +44,7 @@ export interface NotificationContext {
   deadline?: DeadlineInfo;
 }
 
-export type NotificationType = 
+export type NotificationType =
   | 'stale-reminder'
   | 'deadline-warning'
   | 'progress-update'
@@ -110,7 +110,11 @@ export interface NotificationResult {
   userResponse?: UserResponse;
 }
 
-export type UserResponse = 'dismissed' | 'acknowledged' | 'actioned' | 'snoozed';
+export type UserResponse =
+  | 'dismissed'
+  | 'acknowledged'
+  | 'actioned'
+  | 'snoozed';
 
 export interface NotificationHistory {
   issueKey: string;

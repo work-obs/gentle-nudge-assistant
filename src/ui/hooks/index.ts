@@ -9,5 +9,5 @@ export { useOnboarding } from './useOnboarding';
 export type {
   UsePreferencesReturn,
   UseNotificationsReturn,
-  UseDashboardDataReturn
+  UseDashboardDataReturn,
 } from '../types';

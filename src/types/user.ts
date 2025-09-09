@@ -2,7 +2,11 @@
  * User preferences and configuration types
  */
 
-import { NotificationFrequency, MessageTone, NotificationType } from './notification';
+import {
+  NotificationFrequency,
+  MessageTone,
+  NotificationType,
+} from './notification';
 
 export interface UserPreferences {
   userId: string;
@@ -65,9 +69,14 @@ export interface TimeSlot {
   label?: string;
 }
 
-export type DeliveryMethod = 'in-app' | 'email' | 'webhook' | 'banner' | 'modal';
+export type DeliveryMethod =
+  | 'in-app'
+  | 'email'
+  | 'webhook'
+  | 'banner'
+  | 'modal';
 
-export type EncouragementStyle = 
+export type EncouragementStyle =
   | 'cheerful' // "You're doing amazing! ⭐"
   | 'supportive' // "We're here to help you succeed"
   | 'gentle' // "When you have a moment..."
@@ -124,7 +133,7 @@ export interface EscalationRule {
   maxEscalations: number;
 }
 
-export type EscalationTrigger = 
+export type EscalationTrigger =
   | 'overdue-critical'
   | 'sla-breach-imminent'
   | 'user-unresponsive'

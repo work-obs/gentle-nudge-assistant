@@ -52,7 +52,8 @@ export class LiveRegionManager {
   }
 
   announce(message: string, priority: 'polite' | 'assertive' = 'polite') {
-    const region = priority === 'assertive' ? this.assertiveRegion : this.politeRegion;
+    const region =
+      priority === 'assertive' ? this.assertiveRegion : this.politeRegion;
     if (region) {
       region.textContent = message;
       // Clear after announcement to allow re-announcements of the same message
@@ -115,7 +116,7 @@ export const focusManagement = {
     return () => {
       container.removeEventListener('keydown', handleTabKey);
     };
-  }
+  },
 };
 
 // Color contrast utilities
@@ -130,7 +131,10 @@ export const colorContrast = {
   },
 
   // Calculate contrast ratio between two colors
-  getContrastRatio(color1: [number, number, number], color2: [number, number, number]): number {
+  getContrastRatio(
+    color1: [number, number, number],
+    color2: [number, number, number]
+  ): number {
     const l1 = this.getLuminance(...color1);
     const l2 = this.getLuminance(...color2);
     const brightest = Math.max(l1, l2);
@@ -139,7 +143,11 @@ export const colorContrast = {
   },
 
   // Check if contrast meets WCAG standards
-  meetsWCAG(color1: [number, number, number], color2: [number, number, number], level: 'AA' | 'AAA' = 'AA'): boolean {
+  meetsWCAG(
+    color1: [number, number, number],
+    color2: [number, number, number],
+    level: 'AA' | 'AAA' = 'AA'
+  ): boolean {
     const ratio = this.getContrastRatio(color1, color2);
     return level === 'AA' ? ratio >= 4.5 : ratio >= 7;
   },
@@ -148,9 +156,13 @@ export const colorContrast = {
   hexToRgb(hex: string): [number, number, number] | null {
     const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
     return result
-      ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)]
+      ? [
+          parseInt(result[1], 16),
+          parseInt(result[2], 16),
+          parseInt(result[3], 16),
+        ]
       : null;
-  }
+  },
 };
 
 // Reduced motion detection and handling
@@ -169,12 +181,12 @@ export const motionPreferences = {
   onMotionPreferenceChange(callback: (prefersReduced: boolean) => void) {
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     const handler = (e: MediaQueryListEvent) => callback(e.matches);
-    
+
     mediaQuery.addListener(handler);
-    
+
     // Return cleanup function
     return () => mediaQuery.removeListener(handler);
-  }
+  },
 };
 
 // Keyboard navigation utilities
@@ -221,17 +233,19 @@ export const keyboardNavigation = {
     switch (event.key) {
       case 'ArrowUp':
         if (orientation === 'vertical' || orientation === 'grid') {
-          newIndex = orientation === 'grid' && gridColumns
-            ? Math.max(0, currentIndex - gridColumns)
-            : Math.max(0, currentIndex - 1);
+          newIndex =
+            orientation === 'grid' && gridColumns
+              ? Math.max(0, currentIndex - gridColumns)
+              : Math.max(0, currentIndex - 1);
           event.preventDefault();
         }
         break;
       case 'ArrowDown':
         if (orientation === 'vertical' || orientation === 'grid') {
-          newIndex = orientation === 'grid' && gridColumns
-            ? Math.min(totalItems - 1, currentIndex + gridColumns)
-            : Math.min(totalItems - 1, currentIndex + 1);
+          newIndex =
+            orientation === 'grid' && gridColumns
+              ? Math.min(totalItems - 1, currentIndex + gridColumns)
+              : Math.min(totalItems - 1, currentIndex + 1);
           event.preventDefault();
         }
         break;
@@ -260,7 +274,7 @@ export const keyboardNavigation = {
     if (newIndex !== currentIndex) {
       onIndexChange(newIndex);
     }
-  }
+  },
 };
 
 // Screen reader utilities
@@ -286,7 +300,7 @@ export const screenReader = {
   // Announce message to screen readers
   announce(message: string, priority: 'polite' | 'assertive' = 'polite') {
     LiveRegionManager.getInstance().announce(message, priority);
-  }
+  },
 };
 
 // High contrast mode detection
@@ -304,10 +318,12 @@ export const highContrastMode = {
       height: 1px;
     `;
     document.body.appendChild(testElement);
-    
-    const isHighContrast = getComputedStyle(testElement).borderTopColor === getComputedStyle(testElement).borderRightColor;
+
+    const isHighContrast =
+      getComputedStyle(testElement).borderTopColor ===
+      getComputedStyle(testElement).borderRightColor;
     document.body.removeChild(testElement);
-    
+
     return isHighContrast;
   },
 
@@ -318,16 +334,16 @@ export const highContrastMode = {
       outlineOffset: '2px',
       background: 'ButtonFace',
       color: 'ButtonText',
-      border: '1px solid ButtonShadow'
+      border: '1px solid ButtonShadow',
     };
-  }
+  },
 };
 
 // Initialize accessibility utilities
 export const initializeAccessibility = () => {
   // Initialize live region manager
   LiveRegionManager.getInstance();
-  
+
   // Add skip link if it doesn't exist
   if (!document.getElementById('gentle-nudge-skip-link')) {
     const skipLink = document.createElement('a');
@@ -354,7 +370,7 @@ export const initializeAccessibility = () => {
     });
     document.body.insertBefore(skipLink, document.body.firstChild);
   }
-  
+
   // Add main content landmark if it doesn't exist
   if (!document.getElementById('gentle-nudge-main-content')) {
     const mainContent = document.createElement('main');

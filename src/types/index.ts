@@ -21,9 +21,9 @@ export interface NudgeTracking {
   effectivenessScore: number;
 }
 
-export type NotificationType = 
+export type NotificationType =
   | 'stale-reminder'
-  | 'deadline-notification' 
+  | 'deadline-notification'
   | 'progress-update'
   | 'team-encouragement';
 
@@ -185,3 +185,141 @@ export const DEFAULT_NUDGE_ENGINE_CONFIG: NudgeEngineConfig = {
     reminder: 7,
   },
 };
+
+// Missing types needed by other files
+export interface JiraIssueData {
+  key: string;
+  fields: {
+    summary: string;
+    description?: string;
+    status: {
+      name: string;
+      statusCategory: {
+        key: string;
+      };
+    };
+    priority: {
+      name: string;
+    };
+    assignee?: User;
+    reporter: User;
+    created: string;
+    updated: string;
+    duedate?: string;
+    project: Project;
+    issuetype: {
+      name: string;
+    };
+    worklog?: {
+      worklogs: Array<{
+        author: User;
+        created: string;
+        updated: string;
+        timeSpent: string;
+      }>;
+    };
+  };
+}
+
+export interface UserWorkloadInfo {
+  userId: string;
+  activeIssues: number;
+  overallWorkload: 'light' | 'moderate' | 'heavy' | 'overwhelming';
+  lastActivityDate?: Date;
+  notificationFrequency: 'gentle' | 'moderate' | 'minimal' | 'disabled';
+}
+
+export interface TeamMetrics {
+  teamId: string;
+  totalIssues: number;
+  completedThisWeek: number;
+  averageResolutionDays: number;
+  staleIssues: number;
+  upcomingDeadlines: number;
+}
+
+export interface DeadlineInfo {
+  issueKey: string;
+  dueDate?: Date;
+  daysRemaining: number;
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  assignee?: User;
+}
+
+export interface ServiceResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  statusCode?: number;
+}
+
+export interface GentleNudgeError extends Error {
+  code: string;
+  statusCode?: number;
+  context?: Record<string, any>;
+}
+
+// SLA Types
+export interface SLAConfig {
+  name: string;
+  priority: string;
+  responseTimeHours: number;
+  resolutionTimeDays: number;
+  businessHoursOnly: boolean;
+}
+
+export interface SLAStatus {
+  isActive: boolean;
+  timeRemaining: {
+    response?: number;
+    resolution?: number;
+  };
+  breached: boolean;
+  warningThreshold: boolean;
+}
+
+// Context and Analysis Types
+export interface ContextualFactors {
+  isBlocking: boolean;
+  isSecurityRelated: boolean;
+  isPerformanceCritical: boolean;
+  hasExternalDependencies: boolean;
+  requiresSpecializedSkills: boolean;
+  isPartOfEpic: boolean;
+  epicPriority?: number;
+}
+
+export interface DeadlineAnalysis {
+  hasDueDate: boolean;
+  dueDate?: Date;
+  daysUntilDue?: number;
+  hasFixVersion: boolean;
+  fixVersionDate?: Date;
+  daysUntilRelease?: number;
+  urgency: 'low' | 'medium' | 'high' | 'critical';
+  slaStatus: SLAStatus;
+  timeRemaining?: {
+    response?: number;
+    resolution?: number;
+  };
+}
+
+export interface NotificationFrequencyAnalysis {
+  recentNotifications: number;
+  lastNotificationTime?: Date;
+  userPreference: 'gentle' | 'moderate' | 'minimal' | 'disabled';
+  frequencyScore: number;
+  cooldownPeriod: number;
+}
+
+export interface NotificationMessage {
+  id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  issue?: Issue;
+  issues?: Issue[];
+  priority: 'high' | 'medium' | 'low';
+  timestamp: Date;
+  dismissible: boolean;
+}

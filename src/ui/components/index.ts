@@ -3,7 +3,10 @@
 export { default as SettingsPanel } from './SettingsPanel';
 export { default as NotificationComponent } from './NotificationComponent';
 export { default as DashboardWidget } from './DashboardWidget';
-export { default as OnboardingTour, defaultOnboardingSteps } from './OnboardingTour';
+export {
+  default as OnboardingTour,
+  defaultOnboardingSteps,
+} from './OnboardingTour';
 
 // Re-export types for convenience
 export type {
@@ -14,7 +17,7 @@ export type {
   UserPreferences,
   NotificationMessage,
   DashboardData,
-  OnboardingStep
+  OnboardingStep,
 } from '../types';
 
 // Re-export hooks

@@ -195,6 +195,7 @@ export const DEFAULT_ANALYTICS_CONFIG: AnalyticsConfiguration = {
 export function createAnalyticsEngine(
   customConfig?: Partial<AnalyticsConfiguration>
 ): import('./AnalyticsEngine').AnalyticsEngine {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { AnalyticsEngine } = require('./AnalyticsEngine');
 
   const config = customConfig

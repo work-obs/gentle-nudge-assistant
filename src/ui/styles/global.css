@@ -1,0 +1,281 @@
+/* Global styles for Gentle Nudge Assistant */
+
+/* Loading spinner animation */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Gentle bounce animation for onboarding */
+@keyframes gentleBounceIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Gentle slide in animations */
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInFromTop {
+  from {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Pulse glow animation */
+@keyframes pulseGlow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+  }
+}
+
+/* Base styles for reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .gentle-nudge-container * {
+    border: 1px solid ButtonShadow !important;
+    background: ButtonFace !important;
+    color: ButtonText !important;
+  }
+  
+  .gentle-nudge-container button {
+    outline: 2px solid ButtonText !important;
+    outline-offset: 2px !important;
+  }
+}
+
+/* Focus styles for better accessibility */
+.gentle-nudge-container *:focus {
+  outline: 2px solid #2563EB !important;
+  outline-offset: 2px !important;
+  border-radius: 4px !important;
+}
+
+.gentle-nudge-container *:focus:not(:focus-visible) {
+  outline: none !important;
+}
+
+/* Skip link styles */
+.gentle-nudge-skip-link {
+  position: absolute;
+  top: -40px;
+  left: 6px;
+  background: #000;
+  color: #fff;
+  padding: 8px 16px;
+  text-decoration: none;
+  border-radius: 4px;
+  z-index: 10000;
+  transition: top 0.3s ease;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.gentle-nudge-skip-link:focus {
+  top: 6px;
+}
+
+/* Screen reader only text */
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+/* Notification animations */
+.gentle-nudge-notification {
+  animation: slideInFromRight 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.gentle-nudge-notification.dismissing {
+  animation: slideOutToRight 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes slideOutToRight {
+  from {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%) scale(0.95);
+  }
+}
+
+/* Responsive typography */
+@media (max-width: 768px) {
+  .gentle-nudge-container {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  
+  .gentle-nudge-container h1 {
+    font-size: 1.5rem;
+  }
+  
+  .gentle-nudge-container h2 {
+    font-size: 1.25rem;
+  }
+  
+  .gentle-nudge-container h3 {
+    font-size: 1.125rem;
+  }
+  
+  .gentle-nudge-container button {
+    min-height: 44px; /* Better touch targets */
+    padding: 12px 16px;
+  }
+}
+
+/* Dark mode support (if needed) */
+@media (prefers-color-scheme: dark) {
+  .gentle-nudge-container {
+    background-color: #1F2937;
+    color: #F9FAFB;
+  }
+  
+  .gentle-nudge-notification {
+    background-color: #374151;
+    border-color: #4B5563;
+    color: #F9FAFB;
+  }
+  
+  .gentle-nudge-dashboard {
+    background-color: #374151;
+    border-color: #4B5563;
+  }
+}
+
+/* Print styles */
+@media print {
+  .gentle-nudge-notification,
+  .gentle-nudge-onboarding,
+  button {
+    display: none !important;
+  }
+  
+  .gentle-nudge-dashboard {
+    background: white !important;
+    color: black !important;
+    box-shadow: none !important;
+  }
+}
+
+/* Utility classes */
+.gentle-nudge-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.gentle-nudge-slide-in-right {
+  animation: slideInFromRight 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.gentle-nudge-pulse-glow {
+  animation: pulseGlow 2s infinite;
+}
+
+/* Interactive element hover states */
+.gentle-nudge-interactive:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
+}
+
+.gentle-nudge-interactive:active {
+  transform: translateY(0);
+}
+
+/* Loading states */
+.gentle-nudge-loading {
+  opacity: 0.6;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+.gentle-nudge-loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Error states */
+.gentle-nudge-error {
+  border-color: #EF4444 !important;
+  background-color: #FEF2F2 !important;
+}
+
+/* Success states */
+.gentle-nudge-success {
+  border-color: #10B981 !important;
+  background-color: #F0FDF4 !important;
+}
+
+/* Warning states */
+.gentle-nudge-warning {
+  border-color: #F59E0B !important;
+  background-color: #FFFBEB !important;
+}

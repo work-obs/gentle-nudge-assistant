@@ -1,0 +1,243 @@
+{
+  "name": "Gentle Nudge Assistant",
+  "description": "Transform your team's productivity with encouraging, positive reminders that help manage stale tickets and approaching deadlines.",
+  "vendor": {
+    "name": "Gentle Nudge Technologies",
+    "url": "https://www.gentlenudge.app",
+    "supportUrl": "https://support.gentlenudge.app",
+    "privacyPolicyUrl": "https://www.gentlenudge.app/privacy",
+    "termsOfServiceUrl": "https://www.gentlenudge.app/terms",
+    "contactEmail": "support@gentlenudge.app"
+  },
+  "version": "1.0.0",
+  "atlassianConnectVersion": "1.0.0",
+  "category": "Productivity & Reporting",
+  "subcategory": "Notifications & Reminders",
+  "tags": [
+    "notifications",
+    "productivity",
+    "team-management", 
+    "workflow-automation",
+    "positive-messaging",
+    "deadline-management",
+    "agile-tools",
+    "well-being",
+    "team-morale",
+    "gentle-reminders"
+  ],
+  "pricing": {
+    "model": "freemium",
+    "trialPeriod": 30,
+    "freeTier": {
+      "maxUsers": 10,
+      "maxNotifications": 100,
+      "features": [
+        "basic-notifications",
+        "simple-analytics",
+        "email-support"
+      ]
+    },
+    "paidTiers": [
+      {
+        "name": "Professional",
+        "pricePerUser": 3.00,
+        "features": [
+          "unlimited-notifications", 
+          "advanced-analytics",
+          "custom-message-templates",
+          "priority-support",
+          "team-collaboration-features",
+          "advanced-scheduling"
+        ]
+      },
+      {
+        "name": "Enterprise", 
+        "pricePerUser": 5.00,
+        "features": [
+          "api-access",
+          "sso-integration",
+          "advanced-security",
+          "custom-integrations",
+          "dedicated-support",
+          "on-premise-deployment"
+        ]
+      }
+    ]
+  },
+  "assets": {
+    "icon": {
+      "url": "https://gentle-nudge-assets.s3.amazonaws.com/marketplace/icon-512.png",
+      "width": 512,
+      "height": 512,
+      "format": "PNG"
+    },
+    "logo": {
+      "url": "https://gentle-nudge-assets.s3.amazonaws.com/marketplace/logo-horizontal.png", 
+      "width": 800,
+      "height": 200,
+      "format": "PNG"
+    },
+    "screenshots": [
+      {
+        "url": "https://gentle-nudge-assets.s3.amazonaws.com/marketplace/screenshot-1-dashboard.png",
+        "title": "Beautiful Team Dashboard",
+        "description": "Get insights into your team's productivity and well-being with our intuitive analytics dashboard",
+        "width": 1920,
+        "height": 1080,
+        "order": 1
+      },
+      {
+        "url": "https://gentle-nudge-assets.s3.amazonaws.com/marketplace/screenshot-2-notifications.png",
+        "title": "Gentle, Encouraging Notifications", 
+        "description": "Receive positive, personalized reminders that motivate rather than stress your team",
+        "width": 1920,
+        "height": 1080,
+        "order": 2
+      },
+      {
+        "url": "https://gentle-nudge-assets.s3.amazonaws.com/marketplace/screenshot-3-settings.png",
+        "title": "Flexible Configuration Options",
+        "description": "Customize your experience with extensive preference controls and personalization options",
+        "width": 1920, 
+        "height": 1080,
+        "order": 3
+      },
+      {
+        "url": "https://gentle-nudge-assets.s3.amazonaws.com/marketplace/screenshot-4-analytics.png",
+        "title": "Comprehensive Analytics",
+        "description": "Track team metrics, celebrate improvements, and gain insights into productivity patterns",
+        "width": 1920,
+        "height": 1080,
+        "order": 4
+      },
+      {
+        "url": "https://gentle-nudge-assets.s3.amazonaws.com/marketplace/screenshot-5-issue-panel.png",
+        "title": "Smart Issue Panel Integration",
+        "description": "View contextual nudges and suggestions directly within your Jira issues",
+        "width": 1920,
+        "height": 1080,
+        "order": 5
+      }
+    ],
+    "videos": [
+      {
+        "url": "https://gentle-nudge-assets.s3.amazonaws.com/marketplace/demo-video.mp4",
+        "title": "Gentle Nudge Assistant Overview",
+        "description": "See how our app transforms team productivity with positive, encouraging reminders",
+        "thumbnail": "https://gentle-nudge-assets.s3.amazonaws.com/marketplace/video-thumbnail.png",
+        "duration": 120,
+        "order": 1
+      }
+    ]
+  },
+  "features": [
+    {
+      "title": "Smart Stale Ticket Detection",
+      "description": "AI-powered analysis identifies tickets that need attention without being overwhelming",
+      "icon": "intelligence"
+    },
+    {
+      "title": "Positive Messaging System", 
+      "description": "All notifications use encouraging, supportive language that boosts team morale",
+      "icon": "heart"
+    },
+    {
+      "title": "Team Analytics Dashboard",
+      "description": "Beautiful charts and insights help track productivity and team well-being",
+      "icon": "analytics"
+    },
+    {
+      "title": "Contextual Intelligence",
+      "description": "Considers workload, priorities, and individual preferences for optimal timing",
+      "icon": "brain"
+    },
+    {
+      "title": "Flexible Configuration",
+      "description": "Fully customizable notification styles, frequencies, and delivery preferences",
+      "icon": "settings"
+    },
+    {
+      "title": "Privacy-First Design",
+      "description": "All data processing happens within Atlassian's secure infrastructure",
+      "icon": "security"
+    }
+  ],
+  "integrations": [
+    {
+      "name": "Slack",
+      "description": "Send gentle nudges directly to Slack channels and DMs",
+      "icon": "slack",
+      "available": true
+    },
+    {
+      "name": "Microsoft Teams",
+      "description": "Integrate with Teams for seamless workflow notifications",  
+      "icon": "teams",
+      "available": true
+    },
+    {
+      "name": "Email",
+      "description": "Beautiful HTML email notifications with your branding",
+      "icon": "email", 
+      "available": true
+    },
+    {
+      "name": "Webhooks",
+      "description": "Connect to any system with our flexible webhook API",
+      "icon": "webhook",
+      "available": true
+    }
+  ],
+  "security": {
+    "dataEncryption": true,
+    "gdprCompliant": true,
+    "soc2Type2": true,
+    "iso27001": false,
+    "hipaaReady": true,
+    "privacy": {
+      "dataCollection": "minimal",
+      "dataRetention": "user-controlled",
+      "dataSharing": "none",
+      "cookieUsage": "essential-only"
+    }
+  },
+  "support": {
+    "documentation": "https://docs.gentlenudge.app",
+    "community": "https://community.gentlenudge.app",
+    "email": "support@gentlenudge.app",
+    "responseTime": "24 hours",
+    "languages": ["en", "es", "fr", "de"],
+    "knowledgeBase": "https://kb.gentlenudge.app"
+  },
+  "technicalSpecs": {
+    "runtime": "nodejs20.x",
+    "hosting": "atlassian-forge",
+    "dataStorage": "forge-storage",
+    "apiVersion": "v3",
+    "webhookSupport": true,
+    "bulkOperations": true,
+    "rateLimits": {
+      "api": "1000 requests/hour",
+      "notifications": "unlimited"
+    }
+  },
+  "marketplace": {
+    "submissionDate": "2024-01-15",
+    "reviewStatus": "pending",
+    "targetLaunchDate": "2024-02-01",
+    "marketingPartner": false,
+    "featured": false,
+    "newApp": true
+  },
+  "analytics": {
+    "trackingEnabled": true,
+    "provider": "google-analytics",
+    "trackingId": "GA-GENTLE-NUDGE-001",
+    "events": [
+      "app-install",
+      "notification-sent", 
+      "user-engagement",
+      "feature-usage"
+    ]
+  }
+}

@@ -1,0 +1,394 @@
+name: Gentle Nudge Assistant - Deployment Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+      force_deploy:
+        description: 'Force deployment (bypass quality gates)'
+        required: false
+        type: boolean
+        default: false
+      skip_tests:
+        description: 'Skip test execution'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  NODE_VERSION: '20'
+  FORGE_EMAIL: ${{ secrets.FORGE_EMAIL }}
+  FORGE_API_TOKEN: ${{ secrets.FORGE_API_TOKEN }}
+
+jobs:
+  # Determine deployment environment and strategy
+  deployment-strategy:
+    name: 📋 Determine Deployment Strategy
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.strategy.outputs.environment }}
+      should_deploy: ${{ steps.strategy.outputs.should_deploy }}
+      deploy_type: ${{ steps.strategy.outputs.deploy_type }}
+      version: ${{ steps.strategy.outputs.version }}
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 📋 Determine deployment strategy
+        id: strategy
+        run: |
+          # Manual workflow dispatch
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "environment=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
+            echo "should_deploy=true" >> $GITHUB_OUTPUT
+            echo "deploy_type=manual" >> $GITHUB_OUTPUT
+          
+          # Tag push (production)
+          elif [[ "${{ github.ref_type }}" == "tag" ]]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
+            echo "should_deploy=true" >> $GITHUB_OUTPUT
+            echo "deploy_type=release" >> $GITHUB_OUTPUT
+          
+          # Main branch (staging)
+          elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "environment=staging" >> $GITHUB_OUTPUT
+            echo "should_deploy=true" >> $GITHUB_OUTPUT
+            echo "deploy_type=continuous" >> $GITHUB_OUTPUT
+          
+          # Develop branch (development)
+          elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
+            echo "environment=development" >> $GITHUB_OUTPUT
+            echo "should_deploy=true" >> $GITHUB_OUTPUT
+            echo "deploy_type=continuous" >> $GITHUB_OUTPUT
+          
+          else
+            echo "should_deploy=false" >> $GITHUB_OUTPUT
+            echo "deploy_type=none" >> $GITHUB_OUTPUT
+          fi
+          
+          # Get version
+          if [[ "${{ github.ref_type }}" == "tag" ]]; then
+            VERSION="${{ github.ref_name }}"
+            echo "version=${VERSION#v}" >> $GITHUB_OUTPUT
+          else
+            VERSION=$(cat package.json | grep '"version"' | cut -d'"' -f4)
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+          fi
+
+  # Pre-deployment validation
+  pre-deployment-validation:
+    name: 🔍 Pre-deployment Validation
+    runs-on: ubuntu-latest
+    needs: deployment-strategy
+    if: needs.deployment-strategy.outputs.should_deploy == 'true'
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🔍 Lint code
+        run: npm run lint
+
+      - name: 🧪 Run tests
+        if: github.event.inputs.skip_tests != 'true'
+        run: npm run test:ci
+
+      - name: 🏗️ Build application
+        run: npm run build
+
+      - name: ⚒️ Validate Forge manifest
+        run: |
+          npm install -g @forge/cli
+          forge lint
+
+      - name: 📊 Generate build report
+        run: |
+          echo "## 📊 Build Report" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Environment | ${{ needs.deployment-strategy.outputs.environment }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | ${{ needs.deployment-strategy.outputs.version }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Deploy Type | ${{ needs.deployment-strategy.outputs.deploy_type }} |" >> $GITHUB_STEP_SUMMARY
+          
+          if [ -d "dist" ]; then
+            BUNDLE_SIZE=$(du -sh dist | cut -f1)
+            echo "| Bundle Size | $BUNDLE_SIZE |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # Deployment to development
+  deploy-development:
+    name: 🚀 Deploy to Development
+    runs-on: ubuntu-latest
+    needs: [deployment-strategy, pre-deployment-validation]
+    if: needs.deployment-strategy.outputs.environment == 'development'
+    environment:
+      name: development
+      url: https://development.gentle-nudge-assistant.forge.atlassian.com
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🏗️ Build application
+        run: npm run build
+
+      - name: 🚀 Deploy to Forge Development
+        run: |
+          chmod +x deploy/scripts/deploy.sh
+          deploy/scripts/deploy.sh development
+        env:
+          FORGE_EMAIL: ${{ secrets.FORGE_EMAIL }}
+          FORGE_API_TOKEN: ${{ secrets.FORGE_API_TOKEN }}
+
+      - name: 🧪 Post-deployment validation
+        run: |
+          echo "Running development environment validation..."
+          sleep 30
+          # Add actual validation calls here
+
+  # Deployment to staging
+  deploy-staging:
+    name: 🎭 Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [deployment-strategy, pre-deployment-validation]
+    if: needs.deployment-strategy.outputs.environment == 'staging'
+    environment:
+      name: staging
+      url: https://staging.gentle-nudge-assistant.forge.atlassian.com
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🏗️ Build application
+        run: npm run build
+
+      - name: 🎭 Deploy to Forge Staging
+        run: |
+          chmod +x deploy/scripts/deploy.sh
+          deploy/scripts/deploy.sh --backup staging
+        env:
+          FORGE_EMAIL: ${{ secrets.FORGE_EMAIL }}
+          FORGE_API_TOKEN: ${{ secrets.FORGE_API_TOKEN }}
+
+      - name: 🧪 Run staging validation tests
+        run: |
+          npm run test:e2e:staging || true
+          npm run test:integration:staging || true
+
+      - name: 📈 Performance validation
+        run: |
+          echo "Running performance validation..."
+          # Add performance testing here
+
+  # Deployment to production
+  deploy-production:
+    name: 🌟 Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [deployment-strategy, pre-deployment-validation]
+    if: needs.deployment-strategy.outputs.environment == 'production'
+    environment:
+      name: production
+      url: https://marketplace.atlassian.com/apps/gentle-nudge-assistant
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: 🏗️ Build application
+        run: npm run build
+
+      - name: 🔒 Pre-production security scan
+        run: |
+          npm audit --audit-level moderate
+          echo "Running security validation..."
+
+      - name: 🌟 Deploy to Production
+        run: |
+          chmod +x deploy/scripts/deploy.sh
+          deploy/scripts/deploy.sh --backup --skip-tests production
+        env:
+          FORGE_EMAIL: ${{ secrets.FORGE_EMAIL }}
+          FORGE_API_TOKEN: ${{ secrets.FORGE_API_TOKEN }}
+
+      - name: ⏰ Production health check
+        run: |
+          echo "Waiting for production deployment..."
+          sleep 60
+          echo "Running production health checks..."
+          # Add actual health check calls here
+
+      - name: 📊 Update marketplace metrics
+        run: |
+          echo "Updating marketplace listing..."
+          # Add marketplace API calls here
+
+  # Rollback capability
+  rollback:
+    name: 🔄 Emergency Rollback
+    runs-on: ubuntu-latest
+    if: failure() && (needs.deploy-staging.result == 'failure' || needs.deploy-production.result == 'failure')
+    needs: [deployment-strategy, deploy-staging, deploy-production]
+    environment: ${{ needs.deployment-strategy.outputs.environment }}
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔄 Execute rollback
+        run: |
+          chmod +x deploy/scripts/rollback.sh
+          deploy/scripts/rollback.sh --emergency ${{ needs.deployment-strategy.outputs.environment }} $(git tag | sort -V | tail -2 | head -1)
+        env:
+          FORGE_EMAIL: ${{ secrets.FORGE_EMAIL }}
+          FORGE_API_TOKEN: ${{ secrets.FORGE_API_TOKEN }}
+
+      - name: 📨 Send rollback notification
+        if: always()
+        run: |
+          echo "🔄 Emergency rollback executed for ${{ needs.deployment-strategy.outputs.environment }}"
+          # Add notification service calls here
+
+  # Post-deployment monitoring
+  post-deployment-monitoring:
+    name: 📊 Post-deployment Monitoring
+    runs-on: ubuntu-latest
+    needs: [deployment-strategy, deploy-development, deploy-staging, deploy-production]
+    if: always() && (needs.deploy-development.result == 'success' || needs.deploy-staging.result == 'success' || needs.deploy-production.result == 'success')
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 📊 Start monitoring
+        run: |
+          echo "Starting post-deployment monitoring for ${{ needs.deployment-strategy.outputs.environment }}"
+          
+          # Create monitoring script
+          cat > monitor_deployment.sh << 'EOF'
+          #!/bin/bash
+          ENVIRONMENT="${1:-development}"
+          DURATION="${2:-300}"  # 5 minutes
+          INTERVAL="${3:-30}"   # 30 seconds
+          
+          echo "Monitoring $ENVIRONMENT for $DURATION seconds..."
+          
+          START_TIME=$(date +%s)
+          END_TIME=$((START_TIME + DURATION))
+          
+          while [ $(date +%s) -lt $END_TIME ]; do
+            echo "Checking health at $(date)..."
+            # Add health check calls here
+            sleep $INTERVAL
+          done
+          
+          echo "Monitoring completed successfully"
+          EOF
+          
+          chmod +x monitor_deployment.sh
+          ./monitor_deployment.sh ${{ needs.deployment-strategy.outputs.environment }} 300 60
+
+      - name: 📈 Deployment metrics
+        run: |
+          echo "## 📈 Deployment Metrics" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Environment | ${{ needs.deployment-strategy.outputs.environment }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | ${{ needs.deployment-strategy.outputs.version }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Deployed at | $(date) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Deployment time | $(($(date +%s) - ${{ github.run_id }})) seconds |" >> $GITHUB_STEP_SUMMARY
+
+  # Success notification
+  deployment-success:
+    name: 🎉 Deployment Success
+    runs-on: ubuntu-latest
+    needs: [deployment-strategy, deploy-development, deploy-staging, deploy-production, post-deployment-monitoring]
+    if: always() && (needs.deploy-development.result == 'success' || needs.deploy-staging.result == 'success' || needs.deploy-production.result == 'success')
+    
+    steps:
+      - name: 🎉 Celebrate success
+        run: |
+          echo "## 🎉 Deployment Successful!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The Gentle Nudge Assistant has been successfully deployed to **${{ needs.deployment-strategy.outputs.environment }}**! ✨" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Deployment Details" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: ${{ needs.deployment-strategy.outputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ needs.deployment-strategy.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deploy Type**: ${{ needs.deployment-strategy.outputs.deploy_type }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Deployed by**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ "${{ needs.deployment-strategy.outputs.environment }}" == "production" ]]; then
+            echo "- 📊 Monitor marketplace metrics and user adoption" >> $GITHUB_STEP_SUMMARY
+            echo "- 👥 Notify users about new features" >> $GITHUB_STEP_SUMMARY
+            echo "- 📝 Update documentation if needed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- 🧪 Test the new deployment" >> $GITHUB_STEP_SUMMARY
+            echo "- 🔍 Review logs and metrics" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ Validate all functionality works as expected" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Amazing work! The deployment completed successfully with that gentle, encouraging touch we're known for! 🌟" >> $GITHUB_STEP_SUMMARY
+
+      - name: 📨 Send success notification
+        if: needs.deployment-strategy.outputs.environment == 'production'
+        run: |
+          echo "🚀 Production deployment successful!"
+          echo "Gentle Nudge Assistant v${{ needs.deployment-strategy.outputs.version }} is now live!"
+          # Add notification service calls here

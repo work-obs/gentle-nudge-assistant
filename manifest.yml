@@ -1,0 +1,313 @@
+# Gentle Nudge Assistant - Forge Manifest
+# Optimized for Atlassian Marketplace submission
+
+# Core application modules
+modules:
+  jira:issuePanel:
+    - key: gentle-nudge-panel
+      function: issue-panel-handler
+      title: Gentle Nudge Assistant
+      description: View personalized nudges and reminders for this issue
+      icon: https://gentle-nudge-assets.s3.amazonaws.com/icons/panel-icon.svg
+      cacheable: true
+      conditions:
+        - condition: user_is_logged_in
+      
+  jira:issueGlance:
+    - key: gentle-nudge-glance  
+      function: issue-glance-handler
+      title: Nudge Status
+      description: Quick view of nudge status and recommendations
+      icon: https://gentle-nudge-assets.s3.amazonaws.com/icons/glance-icon.svg
+      conditions:
+        - condition: user_is_logged_in
+      
+  jira:projectPage:
+    - key: gentle-nudge-project-page
+      function: project-dashboard-handler
+      title: Team Nudge Dashboard
+      description: Analytics and insights for project-wide gentle nudging
+      icon: https://gentle-nudge-assets.s3.amazonaws.com/icons/dashboard-icon.svg
+      conditions:
+        - condition: user_is_project_admin
+      
+  jira:globalPage:
+    - key: gentle-nudge-settings
+      function: global-settings-handler
+      title: Gentle Nudge Settings
+      description: Configure your personalized nudge preferences
+      icon: https://gentle-nudge-assets.s3.amazonaws.com/icons/settings-icon.svg
+      location: system.top.navigation.bar
+      conditions:
+        - condition: user_is_logged_in
+      
+  jira:adminPage:
+    - key: gentle-nudge-admin
+      function: admin-panel-handler
+      title: Gentle Nudge Administration
+      description: System-wide configuration and user management
+      icon: https://gentle-nudge-assets.s3.amazonaws.com/icons/admin-icon.svg
+      conditions:
+        - condition: user_is_admin
+      
+  scheduled:
+    - key: process-notifications
+      function: notification-processor
+      interval: hourly
+      
+  - key: analytics-aggregator
+      function: analytics-handler
+      interval: daily
+      
+  webtrigger:
+    - key: webhook-handler
+      function: webhook-processor
+      
+  trigger:
+    - key: issue-updated
+      function: issue-update-handler
+      events:
+        - avi:jira:updated:issue
+        - avi:jira:created:issue
+        
+    - key: user-activity
+      function: user-activity-handler  
+      events:
+        - avi:jira:updated:issue:assignee
+
+# Function definitions
+function:
+  - key: issue-panel-handler
+    handler: index.issuePanelHandler
+    timeout: 10
+    
+  - key: issue-glance-handler
+    handler: index.issueGlanceHandler  
+    timeout: 5
+    
+  - key: project-dashboard-handler
+    handler: index.projectDashboardHandler
+    timeout: 15
+    
+  - key: global-settings-handler
+    handler: index.globalSettingsHandler
+    timeout: 10
+    
+  - key: admin-panel-handler
+    handler: index.adminPanelHandler
+    timeout: 15
+    
+  - key: notification-processor
+    handler: index.notificationProcessor
+    timeout: 30
+    
+  - key: analytics-handler
+    handler: index.analyticsHandler
+    timeout: 60
+    
+  - key: webhook-processor
+    handler: index.webhookProcessor
+    timeout: 10
+    
+  - key: issue-update-handler
+    handler: index.issueUpdateHandler
+    timeout: 8
+    
+  - key: user-activity-handler
+    handler: index.userActivityHandler
+    timeout: 5
+
+# Static resources
+resources:
+  - key: main-ui
+    path: static/build
+    
+  - key: assets
+    path: static/assets
+
+# Comprehensive permissions for marketplace compliance
+permissions:
+  scopes:
+    # Core Jira permissions
+    - read:jira-work
+    - read:jira-user
+    - write:jira-work
+    - manage:jira-configuration
+    
+    # User and project data
+    - read:jira:permission:project
+    - read:jira:permission:issue
+    - read:jira:user
+    - read:jira:user:email
+    
+    # Notification and workflow permissions
+    - read:jira:workflow
+    - read:jira:status
+    - read:jira:priority
+    - read:jira:issue-type
+    
+    # Storage permissions
+    - storage:app
+    
+    # Web triggers and events
+    - read:jira:audit-log
+    
+  # External resource permissions
+  external:
+    images:
+      - "*.atlassian.com"
+      - "gentle-nudge-assets.s3.amazonaws.com"
+      - "avatars.githubusercontent.com"
+      
+    fetch:
+      backend:
+        - "api.atlassian.com"
+        - "gentle-nudge-api.herokuapp.com"
+        
+    outbound:
+      - "analytics.google.com"
+
+# Application configuration
+app:
+  runtime:
+    name: nodejs20.x
+  id: ari:cloud:ecosystem::app/gentle-nudge-assistant
+  
+# Marketplace-optimized metadata
+name: Gentle Nudge Assistant
+description: Transform your team's productivity with encouraging, positive reminders that help manage stale tickets and approaching deadlines. Unlike traditional notification systems, our gentle approach boosts morale while keeping projects on track.
+
+# Extended description for marketplace
+longDescription: |
+  The Gentle Nudge Assistant revolutionizes project management by replacing stressful notifications with encouraging, supportive reminders. Built specifically for teams that value both productivity and well-being, this Jira Cloud app helps you:
+
+  ✨ **Smart Gentle Reminders**: AI-powered detection of stale tickets with encouraging, personalized messages
+  📊 **Team Analytics Dashboard**: Track team productivity and well-being metrics in beautiful, intuitive charts  
+  🎯 **Contextual Intelligence**: Considers workload, priorities, and individual preferences for optimal timing
+  💪 **Positive Reinforcement**: Celebrates achievements and progress to maintain team motivation
+  ⚙️ **Flexible Configuration**: Fully customizable notification styles, frequencies, and delivery preferences
+  🔒 **Privacy-First**: All data processing happens within Atlassian's secure infrastructure
+
+  Perfect for agile teams, project managers, and anyone who believes that productivity tools should enhance human well-being, not create stress. Join thousands of teams who've discovered that a gentle approach gets better results.
+
+version: 1.0.0
+
+# Vendor information
+vendor:
+  name: Gentle Nudge Technologies
+  url: https://www.gentlenudge.app
+  supportUrl: https://support.gentlenudge.app
+  privacyPolicyUrl: https://www.gentlenudge.app/privacy
+  termsOfServiceUrl: https://www.gentlenudge.app/terms
+
+# Marketplace categorization
+category: 'Productivity & Reporting'
+subcategory: 'Notifications & Reminders'
+
+# SEO-optimized tags for marketplace discovery
+tags:
+  - notifications
+  - productivity  
+  - team-management
+  - workflow-automation
+  - positive-messaging
+  - deadline-management
+  - agile-tools
+  - well-being
+  - team-morale
+  - gentle-reminders
+
+# Pricing configuration for marketplace
+pricing:
+  model: freemium
+  
+  # Free tier limitations
+  freeTier:
+    users: 10
+    notifications: 100
+    features:
+      - basic-notifications
+      - simple-analytics
+      
+  # Paid tier features  
+  paidTier:
+    features:
+      - advanced-analytics
+      - custom-message-templates
+      - priority-support
+      - team-collaboration-features
+      - advanced-scheduling
+      - api-access
+
+# Marketplace assets
+assets:
+  icon: https://gentle-nudge-assets.s3.amazonaws.com/marketplace/icon-512.png
+  logo: https://gentle-nudge-assets.s3.amazonaws.com/marketplace/logo-horizontal.png
+  screenshots:
+    - url: https://gentle-nudge-assets.s3.amazonaws.com/marketplace/screenshot-1-dashboard.png
+      title: "Beautiful Team Dashboard"
+      description: "Get insights into your team's productivity and well-being"
+      
+    - url: https://gentle-nudge-assets.s3.amazonaws.com/marketplace/screenshot-2-notifications.png  
+      title: "Gentle, Encouraging Notifications"
+      description: "Receive positive, personalized reminders that motivate rather than stress"
+      
+    - url: https://gentle-nudge-assets.s3.amazonaws.com/marketplace/screenshot-3-settings.png
+      title: "Flexible Configuration Options"  
+      description: "Customize your experience with extensive preference controls"
+      
+    - url: https://gentle-nudge-assets.s3.amazonaws.com/marketplace/screenshot-4-analytics.png
+      title: "Comprehensive Analytics"
+      description: "Track team metrics and celebrate improvements"
+
+# Integration capabilities
+integrations:
+  slack: true
+  teams: true
+  email: true
+  
+# Compliance and security
+security:
+  dataEncryption: true
+  gdprCompliant: true
+  soc2Type2: true
+  
+compliance:
+  - gdpr
+  - ccpa
+  - hipaa-ready
+
+# Development and support
+support:
+  email: support@gentlenudge.app
+  documentation: https://docs.gentlenudge.app
+  community: https://community.gentlenudge.app
+  
+# Analytics and monitoring
+analytics:
+  provider: "google-analytics"
+  trackingId: "GA-GENTLE-NUDGE-001"
+
+# Environment-specific configurations
+environments:
+  development:
+    variables:
+      DEBUG_MODE: true
+      LOG_LEVEL: debug
+      ANALYTICS_ENABLED: false
+      PERFORMANCE_MONITORING: false
+      
+  staging:
+    variables:
+      DEBUG_MODE: false
+      LOG_LEVEL: info
+      ANALYTICS_ENABLED: true
+      PERFORMANCE_MONITORING: true
+      
+  production:
+    variables:
+      DEBUG_MODE: false
+      LOG_LEVEL: warn
+      ANALYTICS_ENABLED: true
+      PERFORMANCE_MONITORING: true
+      RATE_LIMITING: true

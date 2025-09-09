@@ -1,0 +1,419 @@
+# Gentle Nudge Assistant - Production Monitoring Configuration
+# Comprehensive monitoring, logging, and alerting setup
+
+# Application Monitoring Configuration
+application:
+  name: "gentle-nudge-assistant"
+  version: "1.0.0"
+  environment: "${ENVIRONMENT:-production}"
+  
+  # Health Check Configuration
+  health:
+    enabled: true
+    endpoint: "/internal/health"
+    interval: 30 # seconds
+    timeout: 5 # seconds
+    
+    checks:
+      - name: "forge_connectivity"
+        type: "http"
+        url: "https://api.atlassian.com/health"
+        timeout: 10
+        
+      - name: "storage_access"
+        type: "forge_storage"
+        test_key: "health_check_test"
+        
+      - name: "notification_engine"
+        type: "internal"
+        component: "notification_processor"
+        
+      - name: "analytics_engine"
+        type: "internal"
+        component: "analytics_processor"
+
+# Metrics Collection
+metrics:
+  enabled: true
+  endpoint: "/internal/metrics"
+  format: "prometheus"
+  
+  # Custom Metrics
+  custom:
+    - name: "notifications_sent_total"
+      type: "counter"
+      description: "Total number of notifications sent"
+      labels: ["environment", "tone", "type"]
+      
+    - name: "notification_processing_duration"
+      type: "histogram"
+      description: "Time spent processing notifications"
+      buckets: [0.1, 0.5, 1.0, 2.0, 5.0, 10.0]
+      
+    - name: "user_engagement_score"
+      type: "gauge"
+      description: "User engagement with notifications"
+      labels: ["project", "user_type"]
+      
+    - name: "active_users_total"
+      type: "gauge"
+      description: "Number of active users"
+      labels: ["environment", "time_period"]
+      
+    - name: "api_requests_total"
+      type: "counter"
+      description: "Total API requests"
+      labels: ["method", "endpoint", "status_code"]
+      
+    - name: "error_rate"
+      type: "gauge" 
+      description: "Error rate percentage"
+      labels: ["component", "error_type"]
+
+# Logging Configuration
+logging:
+  level: "${LOG_LEVEL:-warn}"
+  format: "json"
+  output: "console"
+  
+  # Structured Logging
+  structured:
+    enabled: true
+    include_trace_id: true
+    include_user_id: false # Privacy protection
+    include_request_id: true
+    
+  # Log Sampling
+  sampling:
+    enabled: true
+    rate: 0.1 # 10% sampling in production
+    
+  # Log Categories
+  categories:
+    application:
+      level: "info"
+      enabled: true
+      
+    security:
+      level: "warn" 
+      enabled: true
+      retention_days: 90
+      
+    performance:
+      level: "info"
+      enabled: true
+      sampling_rate: 0.05
+      
+    business:
+      level: "info"
+      enabled: true
+      include_metrics: true
+      
+    user_activity:
+      level: "debug"
+      enabled: false # Privacy protection
+      
+    notifications:
+      level: "info"
+      enabled: true
+      include_content: false # Privacy protection
+
+# Error Tracking
+error_tracking:
+  enabled: true
+  provider: "sentry"
+  
+  # Sentry Configuration
+  sentry:
+    dsn: "${SENTRY_DSN}"
+    environment: "${ENVIRONMENT}"
+    sample_rate: 1.0
+    
+    # Error Filtering
+    filters:
+      ignore_errors:
+        - "Network Error"
+        - "AbortError"
+        - "Non-Error promise rejection"
+        
+      ignore_urls:
+        - "/health"
+        - "/metrics"
+        - "chrome-extension://"
+        
+    # Performance Monitoring
+    performance:
+      enabled: true
+      sample_rate: 0.1
+      
+    # Release Tracking
+    release:
+      auto_detect: true
+      include_commits: 5
+
+# Performance Monitoring
+performance:
+  enabled: true
+  
+  # Response Time Monitoring
+  response_time:
+    thresholds:
+      p50: 200   # 50th percentile threshold (ms)
+      p95: 500   # 95th percentile threshold (ms)  
+      p99: 1000  # 99th percentile threshold (ms)
+      
+  # Memory Usage
+  memory:
+    threshold_mb: 512
+    gc_threshold_mb: 256
+    
+  # CPU Usage
+  cpu:
+    threshold_percent: 70
+    
+  # Database Performance
+  database:
+    slow_query_threshold: 1000 # ms
+    connection_pool_min: 5
+    connection_pool_max: 20
+
+# Business Metrics
+business_metrics:
+  enabled: true
+  endpoint: "/internal/business-metrics"
+  
+  # Key Performance Indicators
+  kpis:
+    - name: "user_adoption_rate"
+      description: "Percentage of users actively using notifications"
+      calculation: "active_users / total_users * 100"
+      target: 85
+      
+    - name: "notification_engagement_rate" 
+      description: "Percentage of notifications that get user engagement"
+      calculation: "engaged_notifications / sent_notifications * 100"
+      target: 60
+      
+    - name: "user_satisfaction_score"
+      description: "Average user satisfaction rating"
+      calculation: "sum(satisfaction_ratings) / count(ratings)"
+      target: 4.5
+      
+    - name: "time_to_resolution_improvement"
+      description: "Improvement in issue resolution time"
+      calculation: "baseline_resolution_time - current_resolution_time"
+      target: 20 # percentage improvement
+
+# Alerting Configuration
+alerting:
+  enabled: true
+  
+  # Alert Channels
+  channels:
+    email:
+      enabled: true
+      recipients: ["alerts@gentlenudge.app"]
+      
+    slack:
+      enabled: true
+      webhook_url: "${SLACK_WEBHOOK_URL}"
+      channel: "#alerts"
+      
+    pagerduty:
+      enabled: true
+      integration_key: "${PAGERDUTY_INTEGRATION_KEY}"
+
+  # Alert Rules
+  rules:
+    # Critical Alerts
+    - name: "application_down"
+      severity: "critical"
+      condition: "health_check_failures > 3"
+      duration: "5m"
+      message: "🚨 Gentle Nudge Assistant is down"
+      runbook: "https://docs.gentlenudge.app/runbooks/application-down"
+      
+    - name: "high_error_rate"
+      severity: "critical"  
+      condition: "error_rate > 5" # 5% error rate
+      duration: "10m"
+      message: "🚨 High error rate detected: {{$value}}%"
+      
+    - name: "response_time_high"
+      severity: "warning"
+      condition: "response_time_p95 > 1000" # 1 second
+      duration: "15m"
+      message: "⚠️ High response times detected"
+      
+    # Warning Alerts  
+    - name: "notification_delivery_issues"
+      severity: "warning"
+      condition: "notification_failure_rate > 2"
+      duration: "15m"
+      message: "⚠️ Notification delivery issues detected"
+      
+    - name: "user_engagement_drop"
+      severity: "warning"
+      condition: "user_engagement_score < 50"
+      duration: "1h"
+      message: "⚠️ User engagement dropping"
+      
+    - name: "storage_usage_high"
+      severity: "warning"
+      condition: "storage_usage > 80" # 80% capacity
+      duration: "30m"
+      message: "⚠️ Storage usage high: {{$value}}%"
+      
+    # Business Alerts
+    - name: "user_satisfaction_low"
+      severity: "info"
+      condition: "user_satisfaction_score < 4.0"
+      duration: "24h"
+      message: "📊 User satisfaction below target"
+      
+    - name: "adoption_rate_low"
+      severity: "info"
+      condition: "user_adoption_rate < 70"
+      duration: "1d"
+      message: "📊 User adoption rate below target"
+
+# Dashboard Configuration
+dashboards:
+  enabled: true
+  
+  # System Health Dashboard
+  system_health:
+    title: "Gentle Nudge Assistant - System Health"
+    refresh_interval: "30s"
+    
+    panels:
+      - title: "Application Status"
+        type: "stat"
+        metrics: ["health_check_status"]
+        
+      - title: "Response Times"
+        type: "graph"
+        metrics: ["response_time_p50", "response_time_p95", "response_time_p99"]
+        
+      - title: "Error Rate"
+        type: "graph"
+        metrics: ["error_rate"]
+        
+      - title: "Active Users"
+        type: "stat"
+        metrics: ["active_users_total"]
+
+  # Business Metrics Dashboard  
+  business:
+    title: "Gentle Nudge Assistant - Business Metrics"
+    refresh_interval: "5m"
+    
+    panels:
+      - title: "User Adoption"
+        type: "gauge"
+        metrics: ["user_adoption_rate"]
+        
+      - title: "Notification Engagement"
+        type: "graph"
+        metrics: ["notification_engagement_rate"]
+        
+      - title: "User Satisfaction"
+        type: "gauge"
+        metrics: ["user_satisfaction_score"]
+        
+      - title: "Resolution Time Improvement"
+        type: "graph"
+        metrics: ["time_to_resolution_improvement"]
+
+# Security Monitoring
+security:
+  enabled: true
+  
+  # Audit Logging
+  audit:
+    enabled: true
+    log_level: "info"
+    
+    events:
+      - "user_login"
+      - "admin_action"
+      - "configuration_change"
+      - "data_export"
+      - "privacy_request"
+      
+  # Rate Limiting Monitoring
+  rate_limiting:
+    enabled: true
+    alert_threshold: 90 # Alert when 90% of rate limit is reached
+    
+  # Security Alerts
+  alerts:
+    - name: "suspicious_activity"
+      condition: "failed_login_attempts > 10"
+      duration: "5m"
+      severity: "warning"
+      
+    - name: "rate_limit_exceeded"
+      condition: "rate_limit_violations > 5"
+      duration: "5m"  
+      severity: "warning"
+
+# Data Privacy Monitoring
+privacy:
+  enabled: true
+  
+  # GDPR Compliance Monitoring
+  gdpr:
+    data_retention_check: true
+    consent_tracking: true
+    data_processing_logs: true
+    
+  # Data Access Monitoring
+  access:
+    log_data_access: true
+    monitor_bulk_operations: true
+    alert_on_unusual_access: true
+
+# Environment-Specific Overrides
+environments:
+  development:
+    logging:
+      level: "debug"
+      sampling:
+        rate: 1.0 # No sampling in dev
+        
+    alerting:
+      enabled: false # No alerts in dev
+      
+    error_tracking:
+      sample_rate: 1.0
+      
+  staging:
+    logging:
+      level: "info"
+      sampling:
+        rate: 0.5
+        
+    alerting:
+      channels:
+        email:
+          recipients: ["dev-team@gentlenudge.app"]
+          
+    performance:
+      response_time:
+        thresholds:
+          p95: 750 # More relaxed in staging
+          
+  production:
+    logging:
+      level: "warn"
+      sampling:
+        rate: 0.1
+        
+    alerting:
+      enabled: true
+      all_channels: true
+      
+    security:
+      audit:
+        retention_days: 365 # Longer retention in prod

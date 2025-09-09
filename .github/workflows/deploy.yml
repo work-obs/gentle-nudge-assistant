@@ -3,7 +3,7 @@ name: Gentle Nudge Assistant - Deployment Pipeline
 on:
   push:
     branches:
-      - main
+      - master
       - develop
     tags:
       - 'v*'
@@ -65,8 +65,8 @@ jobs:
             echo "should_deploy=true" >> $GITHUB_OUTPUT
             echo "deploy_type=release" >> $GITHUB_OUTPUT
           
-          # Main branch (staging)
-          elif [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+          # Master branch (staging)
+          elif [[ "${{ github.ref }}" == "refs/heads/master" ]]; then
             echo "environment=staging" >> $GITHUB_OUTPUT
             echo "should_deploy=true" >> $GITHUB_OUTPUT
             echo "deploy_type=continuous" >> $GITHUB_OUTPUT

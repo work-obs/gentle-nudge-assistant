@@ -40,7 +40,11 @@ export interface Issue {
 
 export interface NotificationMessage {
   id: string;
-  type: 'stale-reminder' | 'deadline-warning' | 'progress-update' | 'team-encouragement';
+  type:
+    | 'stale-reminder'
+    | 'deadline-warning'
+    | 'progress-update'
+    | 'team-encouragement';
   title: string;
   message: string;
   issue?: Issue;

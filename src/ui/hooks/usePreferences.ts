@@ -7,7 +7,7 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   notificationFrequency: 'gentle',
   quietHours: {
     start: '18:00',
-    end: '09:00'
+    end: '09:00',
   },
   preferredTone: 'encouraging',
   staleDaysThreshold: 3,
@@ -16,8 +16,8 @@ const DEFAULT_PREFERENCES: UserPreferences = {
     'stale-reminder',
     'deadline-warning',
     'progress-update',
-    'team-encouragement'
-  ]
+    'team-encouragement',
+  ],
 };
 
 export const usePreferences = (userId: string): UsePreferencesReturn => {
@@ -29,14 +29,14 @@ export const usePreferences = (userId: string): UsePreferencesReturn => {
     try {
       setLoading(true);
       setError(null);
-      
+
       const storedPreferences = await storage.get(`user_preferences_${userId}`);
-      
+
       if (storedPreferences) {
         setPreferences({
           ...DEFAULT_PREFERENCES,
           ...storedPreferences,
-          userId
+          userId,
         });
       } else {
         // First time user - set defaults
@@ -53,26 +53,29 @@ export const usePreferences = (userId: string): UsePreferencesReturn => {
     }
   }, [userId]);
 
-  const updatePreferences = useCallback(async (updates: Partial<UserPreferences>) => {
-    if (!preferences) return;
+  const updatePreferences = useCallback(
+    async (updates: Partial<UserPreferences>) => {
+      if (!preferences) return;
 
-    try {
-      setError(null);
-      
-      const updatedPreferences = {
-        ...preferences,
-        ...updates,
-        userId // Ensure userId is not overwritten
-      };
+      try {
+        setError(null);
 
-      await storage.set(`user_preferences_${userId}`, updatedPreferences);
-      setPreferences(updatedPreferences);
-    } catch (err) {
-      console.error('Failed to update user preferences:', err);
-      setError('Failed to save preferences. Please try again.');
-      throw err;
-    }
-  }, [preferences, userId]);
+        const updatedPreferences = {
+          ...preferences,
+          ...updates,
+          userId, // Ensure userId is not overwritten
+        };
+
+        await storage.set(`user_preferences_${userId}`, updatedPreferences);
+        setPreferences(updatedPreferences);
+      } catch (err) {
+        console.error('Failed to update user preferences:', err);
+        setError('Failed to save preferences. Please try again.');
+        throw err;
+      }
+    },
+    [preferences, userId]
+  );
 
   const resetToDefaults = useCallback(async () => {
     try {
@@ -98,6 +101,6 @@ export const usePreferences = (userId: string): UsePreferencesReturn => {
     updatePreferences,
     resetToDefaults,
     loading,
-    error
+    error,
   };
 };

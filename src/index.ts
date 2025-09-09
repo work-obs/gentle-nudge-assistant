@@ -44,13 +44,16 @@ export class GentleNudgeAssistant {
     try {
       // Process stale issues
       await this.notificationEngine.processStaleIssues(userId);
-      
+
       // Process deadline warnings
       await this.notificationEngine.processDeadlineWarnings(userId);
-      
+
       console.log(`✨ Processed notifications for user: ${userId}`);
     } catch (error) {
-      console.error(`❌ Error processing notifications for user ${userId}:`, error);
+      console.error(
+        `❌ Error processing notifications for user ${userId}:`,
+        error
+      );
     }
   }
 
@@ -64,8 +67,13 @@ export class GentleNudgeAssistant {
     priority: import('./types').NotificationPriority = 'medium'
   ): Promise<string | null> {
     try {
-      const result = await this.notificationEngine.createNotification(userId, issueKey, type, priority);
-      
+      const result = await this.notificationEngine.createNotification(
+        userId,
+        issueKey,
+        type,
+        priority
+      );
+
       if (result.success) {
         console.log(`💫 Created ${type} notification for ${issueKey}`);
         return result.data!;
@@ -87,8 +95,13 @@ export class GentleNudgeAssistant {
     response: 'dismissed' | 'acknowledged' | 'actioned' | 'snoozed'
   ): Promise<void> {
     try {
-      await this.notificationEngine.recordUserResponse(notificationId, response);
-      console.log(`📝 Recorded user response: ${response} for notification ${notificationId}`);
+      await this.notificationEngine.recordUserResponse(
+        notificationId,
+        response
+      );
+      console.log(
+        `📝 Recorded user response: ${response} for notification ${notificationId}`
+      );
     } catch (error) {
       console.error(`❌ Error recording user response:`, error);
     }
@@ -99,8 +112,11 @@ export class GentleNudgeAssistant {
    */
   async getAnalytics(userId: string, days: number = 30): Promise<any> {
     try {
-      const result = await this.notificationEngine.getNotificationAnalytics(userId, days);
-      
+      const result = await this.notificationEngine.getNotificationAnalytics(
+        userId,
+        days
+      );
+
       if (result.success) {
         return result.data;
       } else {
@@ -118,20 +134,29 @@ export class GentleNudgeAssistant {
    */
   async celebrateAchievement(
     userId: string,
-    achievementType: 'issue-completed' | 'streak-maintained' | 'team-contribution',
+    achievementType:
+      | 'issue-completed'
+      | 'streak-maintained'
+      | 'team-contribution',
     context: any
   ): Promise<void> {
     try {
-      const result = await this.notificationEngine.createAchievementNotification(
-        userId,
-        achievementType,
-        context
-      );
-      
+      const result =
+        await this.notificationEngine.createAchievementNotification(
+          userId,
+          achievementType,
+          context
+        );
+
       if (result.success) {
-        console.log(`🎉 Created achievement notification for ${userId}: ${achievementType}`);
+        console.log(
+          `🎉 Created achievement notification for ${userId}: ${achievementType}`
+        );
       } else {
-        console.error(`❌ Failed to create achievement notification:`, result.error);
+        console.error(
+          `❌ Failed to create achievement notification:`,
+          result.error
+        );
       }
     } catch (error) {
       console.error(`❌ Error creating achievement notification:`, error);

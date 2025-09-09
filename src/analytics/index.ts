@@ -1,6 +1,6 @@
 /**
  * Analytics Module Index - Exports all analytics components
- * 
+ *
  * This index file provides convenient access to all analytics system components
  * and includes factory functions for easy initialization.
  */
@@ -19,13 +19,13 @@ export { JiraApiClient } from '../api/JiraApiClient';
 export * from '../types/analytics';
 
 // Default configurations for easy setup
-import { 
+import {
   AnalyticsConfiguration,
   StalenessConfig,
   DeadlineConfig,
   ContextConfig,
   WorkloadConfig,
-  GeneralConfig
+  GeneralConfig,
 } from '../types/analytics';
 
 /**
@@ -33,34 +33,34 @@ import {
  */
 export const DEFAULT_STALENESS_CONFIG: StalenessConfig = {
   thresholds: {
-    fresh: 2,      // days
-    aging: 5,      // days
-    stale: 10,     // days
+    fresh: 2, // days
+    aging: 5, // days
+    stale: 10, // days
     veryStale: 20, // days
-    abandoned: 45  // days
+    abandoned: 45, // days
   },
   factors: {
     lastUpdateWeight: 0.4,
     lastCommentWeight: 0.3,
     lastWorklogWeight: 0.2,
-    statusChangeWeight: 0.1
+    statusChangeWeight: 0.1,
   },
   issueTypeMultipliers: {
-    'Epic': 1.5,        // Epics can age longer
-    'Story': 1.0,       // Standard aging
-    'Task': 1.0,        // Standard aging
-    'Bug': 0.7,         // Bugs should be addressed faster
-    'Sub-task': 0.8,    // Sub-tasks need quicker turnaround
-    'Spike': 1.2        // Research tasks can take longer
+    Epic: 1.5, // Epics can age longer
+    Story: 1.0, // Standard aging
+    Task: 1.0, // Standard aging
+    Bug: 0.7, // Bugs should be addressed faster
+    'Sub-task': 0.8, // Sub-tasks need quicker turnaround
+    Spike: 1.2, // Research tasks can take longer
   },
   priorityMultipliers: {
-    'Blocker': 0.3,     // Blockers age much faster
-    'Critical': 0.5,    // Critical issues age faster
-    'High': 0.8,        // High priority ages faster
-    'Medium': 1.0,      // Standard aging
-    'Low': 1.3,         // Low priority can age longer
-    'Lowest': 1.5       // Lowest priority ages slowest
-  }
+    Blocker: 0.3, // Blockers age much faster
+    Critical: 0.5, // Critical issues age faster
+    High: 0.8, // High priority ages faster
+    Medium: 1.0, // Standard aging
+    Low: 1.3, // Low priority can age longer
+    Lowest: 1.5, // Lowest priority ages slowest
+  },
 };
 
 /**
@@ -68,15 +68,18 @@ export const DEFAULT_STALENESS_CONFIG: StalenessConfig = {
  */
 export const DEFAULT_DEADLINE_CONFIG: DeadlineConfig = {
   warningThresholds: {
-    critical: 1,  // days
-    high: 3,      // days
-    medium: 7,    // days
-    low: 14       // days
+    critical: 1, // days
+    high: 3, // days
+    medium: 7, // days
+    low: 14, // days
   },
   businessDaysOnly: true,
   holidays: [
-    '2024-01-01', '2024-07-04', '2024-12-25', // Standard US holidays
-    '2024-11-28', '2024-11-29' // Thanksgiving
+    '2024-01-01',
+    '2024-07-04',
+    '2024-12-25', // Standard US holidays
+    '2024-11-28',
+    '2024-11-29', // Thanksgiving
   ],
   slaConfigurations: [
     {
@@ -85,7 +88,7 @@ export const DEFAULT_DEADLINE_CONFIG: DeadlineConfig = {
       priority: ['Blocker', 'Critical'],
       issueTypes: ['Bug'],
       timeLimit: 4, // hours
-      businessHoursOnly: true
+      businessHoursOnly: true,
     },
     {
       name: 'Standard Resolution',
@@ -93,9 +96,9 @@ export const DEFAULT_DEADLINE_CONFIG: DeadlineConfig = {
       priority: ['Medium', 'High'],
       issueTypes: ['Story', 'Task'],
       timeLimit: 120, // hours (5 business days)
-      businessHoursOnly: true
-    }
-  ]
+      businessHoursOnly: true,
+    },
+  ],
 };
 
 /**
@@ -103,32 +106,32 @@ export const DEFAULT_DEADLINE_CONFIG: DeadlineConfig = {
  */
 export const DEFAULT_CONTEXT_CONFIG: ContextConfig = {
   priorityWeights: {
-    'Blocker': 1.0,
-    'Critical': 0.9,
-    'High': 0.7,
-    'Medium': 0.5,
-    'Low': 0.3,
-    'Lowest': 0.1
+    Blocker: 1.0,
+    Critical: 0.9,
+    High: 0.7,
+    Medium: 0.5,
+    Low: 0.3,
+    Lowest: 0.1,
   },
   issueTypeWeights: {
-    'Epic': 0.9,
-    'Bug': 0.8,
-    'Story': 0.6,
-    'Task': 0.5,
+    Epic: 0.9,
+    Bug: 0.8,
+    Story: 0.6,
+    Task: 0.5,
     'Sub-task': 0.4,
-    'Spike': 0.3
+    Spike: 0.3,
   },
   projectImportanceWeights: {
-    'CORE': 1.0,      // Core platform project
-    'CUST': 0.9,      // Customer-facing project
-    'INT': 0.6,       // Internal tools
-    'TEST': 0.3       // Test project
+    CORE: 1.0, // Core platform project
+    CUST: 0.9, // Customer-facing project
+    INT: 0.6, // Internal tools
+    TEST: 0.3, // Test project
   },
   complexityFactors: {
     storyPointsWeight: 0.4,
     componentCountWeight: 0.3,
-    dependencyWeight: 0.3
-  }
+    dependencyWeight: 0.3,
+  },
 };
 
 /**
@@ -136,20 +139,20 @@ export const DEFAULT_CONTEXT_CONFIG: ContextConfig = {
  */
 export const DEFAULT_WORKLOAD_CONFIG: WorkloadConfig = {
   capacityThresholds: {
-    optimal: 8,        // issues
-    nearCapacity: 12,  // issues
-    overCapacity: 18   // issues
+    optimal: 8, // issues
+    nearCapacity: 12, // issues
+    overCapacity: 18, // issues
   },
   notificationLimits: {
-    daily: 3,          // notifications per day
-    weekly: 15,        // notifications per week
-    perIssue: 2        // notifications per issue per week
+    daily: 3, // notifications per day
+    weekly: 15, // notifications per week
+    perIssue: 2, // notifications per issue per week
   },
   cooldownPeriods: {
-    gentle: 8,         // hours
-    moderate: 4,       // hours
-    minimal: 24        // hours
-  }
+    gentle: 8, // hours
+    moderate: 4, // hours
+    minimal: 24, // hours
+  },
 };
 
 /**
@@ -160,19 +163,19 @@ export const DEFAULT_GENERAL_CONFIG: GeneralConfig = {
     staleness: true,
     deadlines: true,
     context: true,
-    workload: true
+    workload: true,
   },
   analysisFrequency: 2, // hours
   cacheSettings: {
-    issueDataTTL: 15,      // minutes
-    userWorkloadTTL: 60,   // minutes
-    projectDataTTL: 240    // minutes
+    issueDataTTL: 15, // minutes
+    userWorkloadTTL: 60, // minutes
+    projectDataTTL: 240, // minutes
   },
   batchSizes: {
     issueAnalysis: 50,
     userAnalysis: 25,
-    apiRequests: 100
-  }
+    apiRequests: 100,
+  },
 };
 
 /**
@@ -183,7 +186,7 @@ export const DEFAULT_ANALYTICS_CONFIG: AnalyticsConfiguration = {
   deadlines: DEFAULT_DEADLINE_CONFIG,
   context: DEFAULT_CONTEXT_CONFIG,
   workload: DEFAULT_WORKLOAD_CONFIG,
-  general: DEFAULT_GENERAL_CONFIG
+  general: DEFAULT_GENERAL_CONFIG,
 };
 
 /**
@@ -193,11 +196,11 @@ export function createAnalyticsEngine(
   customConfig?: Partial<AnalyticsConfiguration>
 ): import('./AnalyticsEngine').AnalyticsEngine {
   const { AnalyticsEngine } = require('./AnalyticsEngine');
-  
-  const config = customConfig 
+
+  const config = customConfig
     ? mergeConfigurations(DEFAULT_ANALYTICS_CONFIG, customConfig)
     : DEFAULT_ANALYTICS_CONFIG;
-    
+
   return new AnalyticsEngine(config);
 }
 
@@ -213,16 +216,16 @@ export function createMinimalAnalyticsEngine(): import('./AnalyticsEngine').Anal
         staleness: true,
         deadlines: true,
         context: false,
-        workload: false
+        workload: false,
       },
       batchSizes: {
         issueAnalysis: 20,
         userAnalysis: 10,
-        apiRequests: 50
-      }
-    }
+        apiRequests: 50,
+      },
+    },
   };
-  
+
   return createAnalyticsEngine(minimalConfig);
 }
 
@@ -236,16 +239,16 @@ export function createHighVolumeAnalyticsEngine(): import('./AnalyticsEngine').A
       batchSizes: {
         issueAnalysis: 100,
         userAnalysis: 50,
-        apiRequests: 200
+        apiRequests: 200,
       },
       cacheSettings: {
-        issueDataTTL: 30,      // Longer cache for high volume
+        issueDataTTL: 30, // Longer cache for high volume
         userWorkloadTTL: 120,
-        projectDataTTL: 480
-      }
-    }
+        projectDataTTL: 480,
+      },
+    },
   };
-  
+
   return createAnalyticsEngine(highVolumeConfig);
 }
 
@@ -257,33 +260,37 @@ function mergeConfigurations(
   customConfig: Partial<AnalyticsConfiguration>
 ): AnalyticsConfiguration {
   const merged = { ...defaultConfig };
-  
+
   if (customConfig.staleness) {
     merged.staleness = { ...merged.staleness, ...customConfig.staleness };
   }
-  
+
   if (customConfig.deadlines) {
     merged.deadlines = { ...merged.deadlines, ...customConfig.deadlines };
     if (customConfig.deadlines.slaConfigurations) {
-      merged.deadlines.slaConfigurations = customConfig.deadlines.slaConfigurations;
+      merged.deadlines.slaConfigurations =
+        customConfig.deadlines.slaConfigurations;
     }
     if (customConfig.deadlines.holidays) {
-      merged.deadlines.holidays = [...merged.deadlines.holidays, ...customConfig.deadlines.holidays];
+      merged.deadlines.holidays = [
+        ...merged.deadlines.holidays,
+        ...customConfig.deadlines.holidays,
+      ];
     }
   }
-  
+
   if (customConfig.context) {
     merged.context = { ...merged.context, ...customConfig.context };
   }
-  
+
   if (customConfig.workload) {
     merged.workload = { ...merged.workload, ...customConfig.workload };
   }
-  
+
   if (customConfig.general) {
     merged.general = { ...merged.general, ...customConfig.general };
   }
-  
+
   return merged;
 }
 
@@ -294,7 +301,7 @@ export function validateAnalyticsConfiguration(
   config: AnalyticsConfiguration
 ): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
-  
+
   // Validate staleness thresholds
   const staleness = config.staleness.thresholds;
   if (staleness.fresh >= staleness.aging) {
@@ -303,37 +310,39 @@ export function validateAnalyticsConfiguration(
   if (staleness.aging >= staleness.stale) {
     errors.push('Staleness aging threshold must be less than stale threshold');
   }
-  
+
   // Validate deadline thresholds
   const deadline = config.deadlines.warningThresholds;
   if (deadline.critical >= deadline.high) {
     errors.push('Critical deadline threshold must be less than high threshold');
   }
-  
+
   // Validate workload settings
   const workload = config.workload.capacityThresholds;
   if (workload.optimal >= workload.nearCapacity) {
     errors.push('Optimal capacity must be less than near capacity threshold');
   }
-  
+
   // Validate batch sizes
   const batchSizes = config.general.batchSizes;
   if (batchSizes.issueAnalysis <= 0 || batchSizes.issueAnalysis > 200) {
     errors.push('Issue analysis batch size must be between 1 and 200');
   }
-  
+
   return {
     valid: errors.length === 0,
-    errors
+    errors,
   };
 }
 
 /**
  * Utility to create issue-type specific configurations
  */
-export function createIssueTypeConfig(issueType: string): Partial<AnalyticsConfiguration> {
+export function createIssueTypeConfig(
+  issueType: string
+): Partial<AnalyticsConfiguration> {
   const configs: Record<string, Partial<AnalyticsConfiguration>> = {
-    'development': {
+    development: {
       staleness: {
         ...DEFAULT_STALENESS_CONFIG,
         thresholds: {
@@ -341,22 +350,22 @@ export function createIssueTypeConfig(issueType: string): Partial<AnalyticsConfi
           aging: 3,
           stale: 7,
           veryStale: 14,
-          abandoned: 30
-        }
-      }
+          abandoned: 30,
+        },
+      },
     },
-    'support': {
+    support: {
       deadlines: {
         ...DEFAULT_DEADLINE_CONFIG,
         warningThresholds: {
           critical: 0.5, // 12 hours
-          high: 1,       // 1 day
-          medium: 2,     // 2 days
-          low: 5         // 5 days
-        }
-      }
+          high: 1, // 1 day
+          medium: 2, // 2 days
+          low: 5, // 5 days
+        },
+      },
     },
-    'research': {
+    research: {
       staleness: {
         ...DEFAULT_STALENESS_CONFIG,
         thresholds: {
@@ -364,11 +373,11 @@ export function createIssueTypeConfig(issueType: string): Partial<AnalyticsConfi
           aging: 10,
           stale: 20,
           veryStale: 40,
-          abandoned: 60
-        }
-      }
-    }
+          abandoned: 60,
+        },
+      },
+    },
   };
-  
+
   return configs[issueType] || {};
 }

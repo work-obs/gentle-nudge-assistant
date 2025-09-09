@@ -1,6 +1,6 @@
 /**
  * JiraApiClient - Handles Jira API integration with caching and batching
- * 
+ *
  * This client provides efficient access to Jira data by implementing:
  * - Smart caching strategies to minimize API calls
  * - Batched requests for bulk operations
@@ -8,13 +8,13 @@
  * - Field selection optimization
  */
 
-import { 
-  JiraIssue, 
+import {
+  JiraIssue,
   AnalyticsCache,
   CachedIssueData,
   BatchAnalysisRequest,
   UserPreferences,
-  ProjectConfiguration 
+  ProjectConfiguration,
 } from '../types/analytics';
 
 // Forge bridge import (would be available in actual Forge environment)
@@ -66,19 +66,19 @@ export class JiraApiClient {
       cacheTTL: {
         issues: 15,
         users: 60,
-        projects: 240
+        projects: 240,
       },
       rateLimiting: {
         requestsPerMinute: 100,
-        requestsPerHour: 5000
+        requestsPerHour: 5000,
       },
       retryConfig: {
         maxRetries: 3,
-        baseDelay: 1000
+        baseDelay: 1000,
       },
-      ...config
+      ...config,
     };
-    
+
     this.requestQueue = [];
     this.requestCount = { minute: 0, hour: 0 };
     this.lastRequestReset = { minute: Date.now(), hour: Date.now() };
@@ -87,13 +87,16 @@ export class JiraApiClient {
   /**
    * Fetches issues with intelligent caching and batching
    */
-  async getIssues(jql: string, options: {
-    useCache?: boolean;
-    fields?: string[];
-    maxResults?: number;
-  } = {}): Promise<JiraIssue[]> {
+  async getIssues(
+    jql: string,
+    options: {
+      useCache?: boolean;
+      fields?: string[];
+      maxResults?: number;
+    } = {}
+  ): Promise<JiraIssue[]> {
     const { useCache = true, fields, maxResults = 100 } = options;
-    
+
     // Check cache first if enabled
     if (useCache) {
       const cachedResults = this.getCachedIssues(jql);
@@ -101,65 +104,67 @@ export class JiraApiClient {
         return cachedResults;
       }
     }
-    
+
     // Prepare optimized field list
     const optimizedFields = this.getOptimizedFields(fields);
-    
+
     // Execute search with pagination
     const allIssues: JiraIssue[] = [];
     let startAt = 0;
     const batchSize = Math.min(this.config.batchSize, maxResults);
-    
+
     while (allIssues.length < maxResults) {
       const remainingResults = maxResults - allIssues.length;
       const currentBatchSize = Math.min(batchSize, remainingResults);
-      
+
       const searchRequest: JiraSearchRequest = {
         jql,
         startAt,
         maxResults: currentBatchSize,
-        fields: optimizedFields
+        fields: optimizedFields,
       };
-      
+
       try {
         const response = await this.executeJiraSearch(searchRequest);
-        
+
         if (response.issues.length === 0) {
           break; // No more issues
         }
-        
+
         allIssues.push(...response.issues);
-        
+
         // Cache individual issues
         if (useCache) {
           response.issues.forEach(issue => this.cacheIssue(issue));
         }
-        
+
         startAt += response.issues.length;
-        
+
         // Break if we've got all available issues
         if (startAt >= response.total) {
           break;
         }
-        
       } catch (error) {
         console.error('Failed to fetch issues batch:', error);
         break;
       }
     }
-    
+
     return allIssues;
   }
 
   /**
    * Fetches a single issue with caching
    */
-  async getIssue(issueKey: string, options: {
-    useCache?: boolean;
-    fields?: string[];
-  } = {}): Promise<JiraIssue | null> {
+  async getIssue(
+    issueKey: string,
+    options: {
+      useCache?: boolean;
+      fields?: string[];
+    } = {}
+  ): Promise<JiraIssue | null> {
     const { useCache = true, fields } = options;
-    
+
     // Check cache first
     if (useCache) {
       const cached = this.cache.issues.get(issueKey);
@@ -167,15 +172,15 @@ export class JiraApiClient {
         return cached.issue;
       }
     }
-    
+
     try {
       const optimizedFields = this.getOptimizedFields(fields);
       const issue = await this.executeJiraGetIssue(issueKey, optimizedFields);
-      
+
       if (useCache && issue) {
         this.cacheIssue(issue);
       }
-      
+
       return issue;
     } catch (error) {
       console.error(`Failed to fetch issue ${issueKey}:`, error);
@@ -186,14 +191,17 @@ export class JiraApiClient {
   /**
    * Batch fetch issues by keys with intelligent caching
    */
-  async getIssuesByKeys(issueKeys: string[], options: {
-    useCache?: boolean;
-    fields?: string[];
-  } = {}): Promise<Map<string, JiraIssue>> {
+  async getIssuesByKeys(
+    issueKeys: string[],
+    options: {
+      useCache?: boolean;
+      fields?: string[];
+    } = {}
+  ): Promise<Map<string, JiraIssue>> {
     const { useCache = true, fields } = options;
     const results = new Map<string, JiraIssue>();
     const keysToFetch: string[] = [];
-    
+
     // Check cache for each issue
     if (useCache) {
       for (const key of issueKeys) {
@@ -207,16 +215,16 @@ export class JiraApiClient {
     } else {
       keysToFetch.push(...issueKeys);
     }
-    
+
     // Batch fetch remaining issues
     if (keysToFetch.length > 0) {
       const jql = `key in (${keysToFetch.map(key => `"${key}"`).join(',')})`;
-      const fetchedIssues = await this.getIssues(jql, { 
-        useCache: false, 
-        fields, 
-        maxResults: keysToFetch.length 
+      const fetchedIssues = await this.getIssues(jql, {
+        useCache: false,
+        fields,
+        maxResults: keysToFetch.length,
       });
-      
+
       fetchedIssues.forEach(issue => {
         results.set(issue.key, issue);
         if (useCache) {
@@ -224,54 +232,60 @@ export class JiraApiClient {
         }
       });
     }
-    
+
     return results;
   }
 
   /**
    * Fetches user assigned issues with workload context
    */
-  async getUserAssignedIssues(userId: string, options: {
-    includeResolved?: boolean;
-    maxResults?: number;
-    fields?: string[];
-  } = {}): Promise<JiraIssue[]> {
+  async getUserAssignedIssues(
+    userId: string,
+    options: {
+      includeResolved?: boolean;
+      maxResults?: number;
+      fields?: string[];
+    } = {}
+  ): Promise<JiraIssue[]> {
     const { includeResolved = false, maxResults = 200, fields } = options;
-    
+
     let jql = `assignee = "${userId}"`;
     if (!includeResolved) {
       jql += ' AND status not in (Done, Resolved, Closed)';
     }
-    
+
     // Order by updated date to get most recent activity first
     jql += ' ORDER BY updated DESC';
-    
+
     return this.getIssues(jql, { fields, maxResults });
   }
 
   /**
    * Fetches project issues with filtering options
    */
-  async getProjectIssues(projectId: string, options: {
-    statusCategories?: string[];
-    priorities?: string[];
-    maxResults?: number;
-    fields?: string[];
-  } = {}): Promise<JiraIssue[]> {
+  async getProjectIssues(
+    projectId: string,
+    options: {
+      statusCategories?: string[];
+      priorities?: string[];
+      maxResults?: number;
+      fields?: string[];
+    } = {}
+  ): Promise<JiraIssue[]> {
     const { statusCategories, priorities, maxResults = 500, fields } = options;
-    
+
     let jql = `project = "${projectId}"`;
-    
+
     if (statusCategories && statusCategories.length > 0) {
       jql += ` AND statusCategory in (${statusCategories.map(s => `"${s}"`).join(',')})`;
     }
-    
+
     if (priorities && priorities.length > 0) {
       jql += ` AND priority in (${priorities.map(p => `"${p}"`).join(',')})`;
     }
-    
+
     jql += ' ORDER BY priority DESC, updated ASC';
-    
+
     return this.getIssues(jql, { fields, maxResults });
   }
 
@@ -285,24 +299,30 @@ export class JiraApiClient {
     assignees?: string[];
     maxResults?: number;
   }): Promise<JiraIssue[]> {
-    const { daysSinceUpdate, projectIds, priorities, assignees, maxResults = 200 } = options;
-    
+    const {
+      daysSinceUpdate,
+      projectIds,
+      priorities,
+      assignees,
+      maxResults = 200,
+    } = options;
+
     let jql = `updated < -${daysSinceUpdate}d AND status not in (Done, Resolved, Closed)`;
-    
+
     if (projectIds && projectIds.length > 0) {
       jql += ` AND project in (${projectIds.map(id => `"${id}"`).join(',')})`;
     }
-    
+
     if (priorities && priorities.length > 0) {
       jql += ` AND priority in (${priorities.map(p => `"${p}"`).join(',')})`;
     }
-    
+
     if (assignees && assignees.length > 0) {
       jql += ` AND assignee in (${assignees.map(a => `"${a}"`).join(',')})`;
     }
-    
+
     jql += ' ORDER BY updated ASC'; // Oldest first
-    
+
     return this.getIssues(jql, { maxResults });
   }
 
@@ -316,31 +336,34 @@ export class JiraApiClient {
     maxResults?: number;
   }): Promise<JiraIssue[]> {
     const { daysUntilDue, projectIds, priorities, maxResults = 200 } = options;
-    
+
     let jql = `duedate <= ${daysUntilDue}d AND status not in (Done, Resolved, Closed)`;
-    
+
     if (projectIds && projectIds.length > 0) {
       jql += ` AND project in (${projectIds.map(id => `"${id}"`).join(',')})`;
     }
-    
+
     if (priorities && priorities.length > 0) {
       jql += ` AND priority in (${priorities.map(p => `"${p}"`).join(',')})`;
     }
-    
+
     jql += ' ORDER BY duedate ASC'; // Most urgent first
-    
+
     return this.getIssues(jql, { maxResults });
   }
 
   /**
    * Fetches issue comments for staleness analysis
    */
-  async getIssueComments(issueKey: string, options: {
-    maxResults?: number;
-    orderBy?: 'created' | '-created';
-  } = {}): Promise<any[]> {
+  async getIssueComments(
+    issueKey: string,
+    options: {
+      maxResults?: number;
+      orderBy?: 'created' | '-created';
+    } = {}
+  ): Promise<any[]> {
     const { maxResults = 50, orderBy = '-created' } = options;
-    
+
     try {
       // In actual implementation, would use Forge bridge
       const comments = await this.executeApiRequest({
@@ -348,10 +371,10 @@ export class JiraApiClient {
         method: 'GET',
         params: {
           maxResults,
-          orderBy
-        }
+          orderBy,
+        },
       });
-      
+
       return comments.comments || [];
     } catch (error) {
       console.error(`Failed to fetch comments for ${issueKey}:`, error);
@@ -362,18 +385,21 @@ export class JiraApiClient {
   /**
    * Fetches issue worklogs for activity analysis
    */
-  async getIssueWorklogs(issueKey: string, options: {
-    maxResults?: number;
-  } = {}): Promise<any[]> {
+  async getIssueWorklogs(
+    issueKey: string,
+    options: {
+      maxResults?: number;
+    } = {}
+  ): Promise<any[]> {
     const { maxResults = 50 } = options;
-    
+
     try {
       const worklogs = await this.executeApiRequest({
         url: `/rest/api/3/issue/${issueKey}/worklog`,
         method: 'GET',
-        params: { maxResults }
+        params: { maxResults },
       });
-      
+
       return worklogs.worklogs || [];
     } catch (error) {
       console.error(`Failed to fetch worklogs for ${issueKey}:`, error);
@@ -387,11 +413,11 @@ export class JiraApiClient {
   private cacheIssue(issue: JiraIssue): void {
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + this.config.cacheTTL.issues);
-    
+
     this.cache.issues.set(issue.key, {
       issue,
       timestamp: new Date(),
-      expiresAt
+      expiresAt,
     });
   }
 
@@ -401,7 +427,7 @@ export class JiraApiClient {
   private getCachedIssues(jql: string): JiraIssue[] {
     const cached: JiraIssue[] = [];
     const now = new Date();
-    
+
     // Simplified cache lookup - in real implementation would parse JQL
     for (const [key, cachedData] of this.cache.issues.entries()) {
       if (cachedData.expiresAt > now) {
@@ -409,7 +435,7 @@ export class JiraApiClient {
         cached.push(cachedData.issue);
       }
     }
-    
+
     return cached;
   }
 
@@ -419,49 +445,68 @@ export class JiraApiClient {
   private getOptimizedFields(requestedFields?: string[]): string[] {
     // Default fields needed for analytics
     const defaultFields = [
-      'key', 'id', 'summary', 'description', 'status', 'priority', 
-      'issuetype', 'assignee', 'reporter', 'project', 'created', 
-      'updated', 'duedate', 'resolution', 'labels', 'components', 
-      'fixVersions', 'customfield_10016' // Story points
+      'key',
+      'id',
+      'summary',
+      'description',
+      'status',
+      'priority',
+      'issuetype',
+      'assignee',
+      'reporter',
+      'project',
+      'created',
+      'updated',
+      'duedate',
+      'resolution',
+      'labels',
+      'components',
+      'fixVersions',
+      'customfield_10016', // Story points
     ];
-    
+
     if (requestedFields) {
       // Merge requested fields with defaults, removing duplicates
       return [...new Set([...defaultFields, ...requestedFields])];
     }
-    
+
     return defaultFields;
   }
 
   /**
    * Executes Jira search with rate limiting and error handling
    */
-  private async executeJiraSearch(request: JiraSearchRequest): Promise<JiraSearchResponse> {
+  private async executeJiraSearch(
+    request: JiraSearchRequest
+  ): Promise<JiraSearchResponse> {
     await this.checkRateLimit();
-    
+
     const searchParams = {
       url: '/rest/api/3/search',
       method: 'POST' as const,
-      data: request
+      data: request,
     };
-    
+
     return this.executeApiRequestWithRetry(searchParams);
   }
 
   /**
    * Executes single issue fetch
    */
-  private async executeJiraGetIssue(issueKey: string, fields: string[]): Promise<JiraIssue> {
+  private async executeJiraGetIssue(
+    issueKey: string,
+    fields: string[]
+  ): Promise<JiraIssue> {
     await this.checkRateLimit();
-    
+
     const params = {
       url: `/rest/api/3/issue/${issueKey}`,
       method: 'GET' as const,
       params: {
-        fields: fields.join(',')
-      }
+        fields: fields.join(','),
+      },
     };
-    
+
     return this.executeApiRequestWithRetry(params);
   }
 
@@ -476,17 +521,17 @@ export class JiraApiClient {
   }): Promise<any> {
     // In actual Forge environment, would use:
     // return await invoke('jira-api-request', params);
-    
+
     // Mock implementation for development
     console.log(`[MOCK] API Request: ${params.method} ${params.url}`, params);
-    
+
     // Return mock data based on URL
     if (params.url.includes('/search')) {
       return this.createMockSearchResponse();
     } else if (params.url.includes('/issue/')) {
       return this.createMockIssue();
     }
-    
+
     return {};
   }
 
@@ -495,13 +540,17 @@ export class JiraApiClient {
    */
   private async executeApiRequestWithRetry(params: any): Promise<any> {
     let lastError: Error | null = null;
-    
-    for (let attempt = 0; attempt <= this.config.retryConfig.maxRetries; attempt++) {
+
+    for (
+      let attempt = 0;
+      attempt <= this.config.retryConfig.maxRetries;
+      attempt++
+    ) {
       try {
         return await this.executeApiRequest(params);
       } catch (error) {
         lastError = error as Error;
-        
+
         // Don't retry on client errors (4xx)
         if (error && typeof error === 'object' && 'status' in error) {
           const status = (error as any).status;
@@ -509,14 +558,15 @@ export class JiraApiClient {
             throw error;
           }
         }
-        
+
         if (attempt < this.config.retryConfig.maxRetries) {
-          const delay = this.config.retryConfig.baseDelay * Math.pow(2, attempt);
+          const delay =
+            this.config.retryConfig.baseDelay * Math.pow(2, attempt);
           await this.sleep(delay);
         }
       }
     }
-    
+
     throw lastError;
   }
 
@@ -525,33 +575,37 @@ export class JiraApiClient {
    */
   private async checkRateLimit(): Promise<void> {
     const now = Date.now();
-    
+
     // Reset counters if needed
-    if (now - this.lastRequestReset.minute > 60000) { // 1 minute
+    if (now - this.lastRequestReset.minute > 60000) {
+      // 1 minute
       this.requestCount.minute = 0;
       this.lastRequestReset.minute = now;
     }
-    
-    if (now - this.lastRequestReset.hour > 3600000) { // 1 hour
+
+    if (now - this.lastRequestReset.hour > 3600000) {
+      // 1 hour
       this.requestCount.hour = 0;
       this.lastRequestReset.hour = now;
     }
-    
+
     // Check rate limits
-    if (this.requestCount.minute >= this.config.rateLimiting.requestsPerMinute) {
+    if (
+      this.requestCount.minute >= this.config.rateLimiting.requestsPerMinute
+    ) {
       const waitTime = 60000 - (now - this.lastRequestReset.minute);
       console.log(`Rate limit reached, waiting ${waitTime}ms`);
       await this.sleep(waitTime);
       return this.checkRateLimit();
     }
-    
+
     if (this.requestCount.hour >= this.config.rateLimiting.requestsPerHour) {
       const waitTime = 3600000 - (now - this.lastRequestReset.hour);
       console.log(`Hourly rate limit reached, waiting ${waitTime}ms`);
       await this.sleep(waitTime);
       return this.checkRateLimit();
     }
-    
+
     // Increment counters
     this.requestCount.minute++;
     this.requestCount.hour++;
@@ -572,59 +626,64 @@ export class JiraApiClient {
       startAt: 0,
       maxResults: 50,
       total: 1,
-      issues: [this.createMockIssue()]
+      issues: [this.createMockIssue()],
     };
   }
 
   private createMockIssue(): JiraIssue {
     const now = new Date();
-    const created = new Date(now.getTime() - Math.random() * 30 * 24 * 60 * 60 * 1000);
-    const updated = new Date(created.getTime() + Math.random() * (now.getTime() - created.getTime()));
-    
+    const created = new Date(
+      now.getTime() - Math.random() * 30 * 24 * 60 * 60 * 1000
+    );
+    const updated = new Date(
+      created.getTime() + Math.random() * (now.getTime() - created.getTime())
+    );
+
     return {
       id: '12345',
       key: 'TEST-123',
       fields: {
         summary: 'Sample issue for analytics testing',
-        description: 'This is a sample issue used for testing the analytics system',
+        description:
+          'This is a sample issue used for testing the analytics system',
         status: {
           name: 'In Progress',
           statusCategory: {
             key: 'indeterminate',
-            colorName: 'yellow'
-          }
+            colorName: 'yellow',
+          },
         },
         priority: {
           name: 'Medium',
-          id: '3'
+          id: '3',
         },
         issuetype: {
           name: 'Story',
-          id: '10001'
+          id: '10001',
         },
         assignee: {
           accountId: 'user123',
           displayName: 'John Developer',
-          emailAddress: 'john@example.com'
+          emailAddress: 'john@example.com',
         },
         reporter: {
           accountId: 'reporter123',
-          displayName: 'Jane Manager'
+          displayName: 'Jane Manager',
         },
         project: {
           id: '10000',
           key: 'TEST',
-          name: 'Test Project'
+          name: 'Test Project',
         },
         created: created.toISOString(),
         updated: updated.toISOString(),
-        duedate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        duedate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+          .toISOString()
+          .split('T')[0],
         labels: ['frontend', 'urgent'],
-        components: [
-          { id: '10100', name: 'UI Components' }
-        ],
+        components: [{ id: '10100', name: 'UI Components' }],
         fixVersions: [
-          { id: '10200', name: 'v2.1.0', releaseDate: '2024-12-31' }
+          { id: '10200', name: 'v2.1.0', releaseDate: '2024-12-31' },
         ],
         customfield_10016: 5, // Story points
         worklog: {
@@ -635,11 +694,11 @@ export class JiraApiClient {
               author: { accountId: 'user123' },
               created: updated.toISOString(),
               timeSpent: '2h',
-              timeSpentSeconds: 7200
-            }
-          ]
-        }
-      }
+              timeSpentSeconds: 7200,
+            },
+          ],
+        },
+      },
     };
   }
 
@@ -648,21 +707,21 @@ export class JiraApiClient {
    */
   clearExpiredCache(): void {
     const now = new Date();
-    
+
     // Clear expired issues
     for (const [key, cached] of this.cache.issues.entries()) {
       if (cached.expiresAt <= now) {
         this.cache.issues.delete(key);
       }
     }
-    
+
     // Clear expired users
     for (const [key, cached] of this.cache.users.entries()) {
       if (cached.expiresAt <= now) {
         this.cache.users.delete(key);
       }
     }
-    
+
     // Clear expired projects
     for (const [key, cached] of this.cache.projects.entries()) {
       if (cached.expiresAt <= now) {
@@ -680,7 +739,7 @@ export class JiraApiClient {
     projects: { total: number; expired: number };
   } {
     const now = new Date();
-    
+
     const countExpired = (cache: Map<string, { expiresAt: Date }>) => {
       let expired = 0;
       for (const [, cached] of cache.entries()) {
@@ -688,20 +747,20 @@ export class JiraApiClient {
       }
       return expired;
     };
-    
+
     return {
       issues: {
         total: this.cache.issues.size,
-        expired: countExpired(this.cache.issues as any)
+        expired: countExpired(this.cache.issues as any),
       },
       users: {
         total: this.cache.users.size,
-        expired: countExpired(this.cache.users as any)
+        expired: countExpired(this.cache.users as any),
       },
       projects: {
         total: this.cache.projects.size,
-        expired: countExpired(this.cache.projects as any)
-      }
+        expired: countExpired(this.cache.projects as any),
+      },
     };
   }
 

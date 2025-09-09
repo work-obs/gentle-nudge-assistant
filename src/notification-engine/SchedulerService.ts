@@ -3,7 +3,13 @@
  * Implements intelligent scheduling that respects user preferences and workload
  */
 
-import { addMinutes, isWithinInterval, parseISO, format, isWeekend } from 'date-fns';
+import {
+  addMinutes,
+  isWithinInterval,
+  parseISO,
+  format,
+  isWeekend,
+} from 'date-fns';
 import * as _ from 'lodash';
 
 import {
@@ -22,7 +28,7 @@ import {
   NOTIFICATION_CONSTANTS,
   TimeWindow,
   AdaptiveAdjustment,
-  SchedulingMetrics
+  SchedulingMetrics,
 } from '../types';
 
 export class SchedulerService {
@@ -62,7 +68,7 @@ export class SchedulerService {
 
       return {
         success: true,
-        data: decision
+        data: decision,
       };
     } catch (error) {
       return {
@@ -73,8 +79,8 @@ export class SchedulerService {
           details: error,
           timestamp: new Date(),
           userId,
-          issueKey
-        }
+          issueKey,
+        },
       };
     }
   }
@@ -92,7 +98,7 @@ export class SchedulerService {
   ): Promise<ServiceResponse<ScheduledNotification>> {
     try {
       const notificationId = this.generateNotificationId();
-      
+
       const scheduledNotification: ScheduledNotification = {
         id: notificationId,
         issueKey,
@@ -105,14 +111,14 @@ export class SchedulerService {
         maxAttempts: NOTIFICATION_CONSTANTS.MAX_RETRY_ATTEMPTS,
         backoffMultiplier: NOTIFICATION_CONSTANTS.BACKOFF_MULTIPLIER,
         context: context,
-        status: 'pending'
+        status: 'pending',
       };
 
       await this.addToQueue(scheduledNotification);
 
       return {
         success: true,
-        data: scheduledNotification
+        data: scheduledNotification,
       };
     } catch (error) {
       return {
@@ -123,8 +129,8 @@ export class SchedulerService {
           details: error,
           timestamp: new Date(),
           userId,
-          issueKey
-        }
+          issueKey,
+        },
       };
     }
   }
@@ -141,7 +147,7 @@ export class SchedulerService {
       if (!queue) {
         return {
           success: true,
-          data: []
+          data: [],
         };
       }
 
@@ -154,7 +160,7 @@ export class SchedulerService {
 
       return {
         success: true,
-        data: readyNotifications
+        data: readyNotifications,
       };
     } catch (error) {
       return {
@@ -164,8 +170,8 @@ export class SchedulerService {
           message: 'Failed to retrieve ready notifications',
           details: error,
           timestamp: new Date(),
-          userId
-        }
+          userId,
+        },
       };
     }
   }
@@ -187,7 +193,7 @@ export class SchedulerService {
 
         if (queuedNotification) {
           queuedNotification.scheduledNotification.status = status;
-          
+
           if (deliveredAt && status === 'delivered') {
             // Update metrics
             await this.updateSchedulingMetrics(
@@ -196,7 +202,7 @@ export class SchedulerService {
               deliveredAt
             );
           }
-          
+
           if (status === 'failed') {
             await this.handleFailedNotification(queuedNotification);
           }
@@ -210,8 +216,8 @@ export class SchedulerService {
         error: {
           code: 'NOTIFICATION_NOT_FOUND',
           message: 'Scheduled notification not found',
-          timestamp: new Date()
-        }
+          timestamp: new Date(),
+        },
       };
     } catch (error) {
       return {
@@ -220,8 +226,8 @@ export class SchedulerService {
           code: 'STATUS_UPDATE_ERROR',
           message: 'Failed to update notification status',
           details: error,
-          timestamp: new Date()
-        }
+          timestamp: new Date(),
+        },
       };
     }
   }
@@ -244,18 +250,19 @@ export class SchedulerService {
           type: 'timing',
           reason: 'User responds better at specific times',
           adjustment: `Prefer delivery between ${timeOptimization.start} and ${timeOptimization.end}`,
-          impact: 'moderate'
+          impact: 'moderate',
         });
       }
 
       // Analyze frequency preferences
-      const frequencyOptimization = this.analyzeFrequencyPreference(responseHistory);
+      const frequencyOptimization =
+        this.analyzeFrequencyPreference(responseHistory);
       if (frequencyOptimization) {
         adjustments.push({
           type: 'frequency',
           reason: 'User shows preference for different frequency',
           adjustment: `Adjust to ${frequencyOptimization} frequency`,
-          impact: 'significant'
+          impact: 'significant',
         });
       }
 
@@ -266,7 +273,7 @@ export class SchedulerService {
 
       return {
         success: true,
-        data: adjustments
+        data: adjustments,
       };
     } catch (error) {
       return {
@@ -276,83 +283,111 @@ export class SchedulerService {
           message: 'Failed to optimize scheduling',
           details: error,
           timestamp: new Date(),
-          userId
-        }
+          userId,
+        },
       };
     }
   }
 
-  private buildDefaultConfig(overrides?: Partial<SchedulingConfiguration>): SchedulingConfiguration {
+  private buildDefaultConfig(
+    overrides?: Partial<SchedulingConfiguration>
+  ): SchedulingConfiguration {
     const defaultConfig: SchedulingConfiguration = {
       baseFrequencyMinutes: 240, // 4 hours
       priorityMultipliers: {
         low: 2.0,
         medium: 1.5,
         high: 1.0,
-        urgent: 0.5
+        urgent: 0.5,
       },
       typeScheduling: {
         'stale-reminder': {
           minIntervalMinutes: 480, // 8 hours
           maxIntervalMinutes: 1440, // 24 hours
           optimalTimeWindows: [
-            { start: '09:00', end: '11:00', daysOfWeek: [1, 2, 3, 4, 5], weight: 0.9 },
-            { start: '14:00', end: '16:00', daysOfWeek: [1, 2, 3, 4, 5], weight: 0.8 }
+            {
+              start: '09:00',
+              end: '11:00',
+              daysOfWeek: [1, 2, 3, 4, 5],
+              weight: 0.9,
+            },
+            {
+              start: '14:00',
+              end: '16:00',
+              daysOfWeek: [1, 2, 3, 4, 5],
+              weight: 0.8,
+            },
           ],
           avoidTimeWindows: [
-            { start: '12:00', end: '13:00', daysOfWeek: [1, 2, 3, 4, 5], weight: 0.1 }
+            {
+              start: '12:00',
+              end: '13:00',
+              daysOfWeek: [1, 2, 3, 4, 5],
+              weight: 0.1,
+            },
           ],
           backoffMultiplier: 1.5,
-          maxDailyCount: 3
+          maxDailyCount: 3,
         },
         'deadline-warning': {
           minIntervalMinutes: 60,
           maxIntervalMinutes: 480,
           optimalTimeWindows: [
-            { start: '08:00', end: '10:00', daysOfWeek: [1, 2, 3, 4, 5], weight: 1.0 }
+            {
+              start: '08:00',
+              end: '10:00',
+              daysOfWeek: [1, 2, 3, 4, 5],
+              weight: 1.0,
+            },
           ],
           avoidTimeWindows: [],
           backoffMultiplier: 1.2,
-          maxDailyCount: 5
+          maxDailyCount: 5,
         },
         'progress-update': {
           minIntervalMinutes: 720, // 12 hours
           maxIntervalMinutes: 2160, // 36 hours
           optimalTimeWindows: [
-            { start: '16:00', end: '17:00', daysOfWeek: [5], weight: 0.9 } // Friday afternoon
+            { start: '16:00', end: '17:00', daysOfWeek: [5], weight: 0.9 }, // Friday afternoon
           ],
           avoidTimeWindows: [],
           backoffMultiplier: 2.0,
-          maxDailyCount: 1
+          maxDailyCount: 1,
         },
         'team-encouragement': {
           minIntervalMinutes: 1440, // 24 hours
           maxIntervalMinutes: 4320, // 72 hours
           optimalTimeWindows: [
-            { start: '10:00', end: '11:00', daysOfWeek: [1], weight: 1.0 } // Monday morning
+            { start: '10:00', end: '11:00', daysOfWeek: [1], weight: 1.0 }, // Monday morning
           ],
           avoidTimeWindows: [],
           backoffMultiplier: 3.0,
-          maxDailyCount: 1
+          maxDailyCount: 1,
         },
         'achievement-recognition': {
           minIntervalMinutes: 0, // Immediate
           maxIntervalMinutes: 60,
           optimalTimeWindows: [
-            { start: '09:00', end: '17:00', daysOfWeek: [1, 2, 3, 4, 5], weight: 1.0 }
+            {
+              start: '09:00',
+              end: '17:00',
+              daysOfWeek: [1, 2, 3, 4, 5],
+              weight: 1.0,
+            },
           ],
           avoidTimeWindows: [],
           backoffMultiplier: 1.0,
-          maxDailyCount: 3
-        }
+          maxDailyCount: 3,
+        },
       },
       globalLimits: {
         maxNotificationsPerHour: 3,
         maxNotificationsPerDay: NOTIFICATION_CONSTANTS.MAX_DAILY_NOTIFICATIONS,
-        minIntervalBetweenNotifications: NOTIFICATION_CONSTANTS.MIN_INTERVAL_MINUTES,
+        minIntervalBetweenNotifications:
+          NOTIFICATION_CONSTANTS.MIN_INTERVAL_MINUTES,
         respectQuietHours: true,
         respectWeekends: true,
-        respectHolidays: true
+        respectHolidays: true,
       },
       adaptiveScheduling: {
         enableLearning: true,
@@ -360,8 +395,8 @@ export class SchedulerService {
         adaptToUserResponse: true,
         adaptToWorkload: true,
         adaptToTeamVelocity: false,
-        minimumDataPoints: 10
-      }
+        minimumDataPoints: 10,
+      },
     };
 
     return _.merge(defaultConfig, overrides || {});
@@ -374,15 +409,21 @@ export class SchedulerService {
   ): Promise<SchedulingContext> {
     const now = new Date();
     const queue = this.userQueues.get(userId);
-    
+
     return {
       userWorkload: workloadInfo.currentCapacityLevel,
       timeZone: userPreferences.personalizedSettings.timeZone,
-      isInQuietHours: this.isInQuietHours(now, userPreferences.notificationSettings.quietHours),
-      isInWorkingHours: this.isInWorkingHours(now, userPreferences.personalizedSettings.workingHours),
+      isInQuietHours: this.isInQuietHours(
+        now,
+        userPreferences.notificationSettings.quietHours
+      ),
+      isInWorkingHours: this.isInWorkingHours(
+        now,
+        userPreferences.personalizedSettings.workingHours
+      ),
       recentNotificationCount: this.getRecentNotificationCount(userId, 24), // last 24 hours
       lastNotificationTime: queue?.lastProcessedAt,
-      userResponseHistory: [] // Would be populated from storage
+      userResponseHistory: [], // Would be populated from storage
     };
   }
 
@@ -397,7 +438,10 @@ export class SchedulerService {
     let confidenceScore = 1.0;
 
     // Check global limits
-    if (context.recentNotificationCount >= this.config.globalLimits.maxNotificationsPerDay) {
+    if (
+      context.recentNotificationCount >=
+      this.config.globalLimits.maxNotificationsPerDay
+    ) {
       shouldSchedule = false;
       reasoning.push('Daily notification limit reached');
       confidenceScore = 0;
@@ -418,7 +462,7 @@ export class SchedulerService {
     }
 
     // Determine optimal timing
-    const recommendedTime = shouldSchedule 
+    const recommendedTime = shouldSchedule
       ? this.calculateOptimalTime(type, priority, context, userPreferences)
       : addMinutes(new Date(), 60); // Default to 1 hour later
 
@@ -427,9 +471,9 @@ export class SchedulerService {
     }
 
     const alternativeTimes = this.calculateAlternativeTimes(
-      type, 
-      priority, 
-      context, 
+      type,
+      priority,
+      context,
       userPreferences
     );
 
@@ -439,7 +483,7 @@ export class SchedulerService {
       reasoning,
       alternativeTimes,
       confidenceScore,
-      adaptiveAdjustments: []
+      adaptiveAdjustments: [],
     };
   }
 
@@ -450,32 +494,33 @@ export class SchedulerService {
     userPreferences: UserPreferences
   ): Date {
     const typeConfig = this.config.typeScheduling[type];
-    const baseInterval = typeConfig.minIntervalMinutes * this.config.priorityMultipliers[priority];
-    
+    const baseInterval =
+      typeConfig.minIntervalMinutes * this.config.priorityMultipliers[priority];
+
     // Find the next optimal time window
     const optimalWindows = typeConfig.optimalTimeWindows;
     const now = new Date();
-    
+
     // Simple implementation - would be more sophisticated in production
     let targetTime = addMinutes(now, baseInterval);
-    
+
     // Try to fit into an optimal window
     if (optimalWindows.length > 0) {
-      const bestWindow = optimalWindows.reduce((best, current) => 
+      const bestWindow = optimalWindows.reduce((best, current) =>
         current.weight > best.weight ? current : best
       );
-      
+
       // Adjust to the best window (simplified logic)
       const today = new Date();
       const windowStart = new Date(today);
       const [hours, minutes] = bestWindow.start.split(':').map(Number);
       windowStart.setHours(hours, minutes, 0, 0);
-      
+
       if (windowStart > now) {
         targetTime = windowStart;
       }
     }
-    
+
     return targetTime;
   }
 
@@ -487,18 +532,20 @@ export class SchedulerService {
   ): Date[] {
     const alternatives: Date[] = [];
     const baseTime = new Date();
-    
+
     // Generate 3 alternative times
     for (let i = 1; i <= 3; i++) {
       alternatives.push(addMinutes(baseTime, i * 120)); // Every 2 hours
     }
-    
+
     return alternatives;
   }
 
-  private async addToQueue(scheduledNotification: ScheduledNotification): Promise<void> {
+  private async addToQueue(
+    scheduledNotification: ScheduledNotification
+  ): Promise<void> {
     const userId = scheduledNotification.userId;
-    
+
     if (!this.userQueues.has(userId)) {
       this.userQueues.set(userId, {
         userId,
@@ -506,7 +553,7 @@ export class SchedulerService {
         nextProcessingTime: new Date(),
         processingStatus: 'idle',
         errorCount: 0,
-        maxRetries: NOTIFICATION_CONSTANTS.MAX_RETRY_ATTEMPTS
+        maxRetries: NOTIFICATION_CONSTANTS.MAX_RETRY_ATTEMPTS,
       });
     }
 
@@ -517,7 +564,7 @@ export class SchedulerService {
       estimatedDeliveryTime: scheduledNotification.scheduledFor,
       dependencies: [],
       canBeBatched: this.canBeBatched(scheduledNotification),
-      batchKey: this.generateBatchKey(scheduledNotification)
+      batchKey: this.generateBatchKey(scheduledNotification),
     };
 
     queue.notifications.push(queuedNotification);
@@ -531,32 +578,42 @@ export class SchedulerService {
       'stale-reminder': 10,
       'achievement-recognition': 15,
       'progress-update': 5,
-      'team-encouragement': 5
+      'team-encouragement': 5,
     };
-    
-    return priorityScores[notification.priority] + typeScores[notification.notificationType];
+
+    return (
+      priorityScores[notification.priority] +
+      typeScores[notification.notificationType]
+    );
   }
 
   private canBeBatched(notification: ScheduledNotification): boolean {
     // Progress updates and team encouragement can be batched
-    return ['progress-update', 'team-encouragement'].includes(notification.notificationType);
+    return ['progress-update', 'team-encouragement'].includes(
+      notification.notificationType
+    );
   }
 
-  private generateBatchKey(notification: ScheduledNotification): string | undefined {
+  private generateBatchKey(
+    notification: ScheduledNotification
+  ): string | undefined {
     if (!this.canBeBatched(notification)) return undefined;
-    
+
     // Group by type and date
     const date = format(notification.scheduledFor, 'yyyy-MM-dd');
     return `${notification.notificationType}-${date}`;
   }
 
-  private async handleFailedNotification(queuedNotification: QueuedNotification): Promise<void> {
+  private async handleFailedNotification(
+    queuedNotification: QueuedNotification
+  ): Promise<void> {
     const notification = queuedNotification.scheduledNotification;
     notification.attempts++;
 
     if (notification.attempts < notification.maxAttempts) {
       // Reschedule with backoff
-      const backoffMinutes = Math.pow(notification.backoffMultiplier, notification.attempts) * 30;
+      const backoffMinutes =
+        Math.pow(notification.backoffMultiplier, notification.attempts) * 30;
       notification.scheduledFor = addMinutes(new Date(), backoffMinutes);
       notification.status = 'pending';
     } else {
@@ -566,12 +623,12 @@ export class SchedulerService {
 
   private isInQuietHours(time: Date, quietHours: any): boolean {
     if (!quietHours.enabled) return false;
-    
+
     // Simplified implementation
     const hour = time.getHours();
     const startHour = parseInt(quietHours.start.split(':')[0]);
     const endHour = parseInt(quietHours.end.split(':')[0]);
-    
+
     return hour >= startHour || hour <= endHour;
   }
 
@@ -579,7 +636,7 @@ export class SchedulerService {
     // Simplified implementation
     const dayOfWeek = time.getDay();
     const hour = time.getHours();
-    
+
     // Assume standard working hours if not specified
     return dayOfWeek >= 1 && dayOfWeek <= 5 && hour >= 9 && hour <= 17;
   }
@@ -594,7 +651,9 @@ export class SchedulerService {
     ).length;
   }
 
-  private analyzeOptimalTimes(responseHistory: any[]): { start: string; end: string } | null {
+  private analyzeOptimalTimes(
+    responseHistory: any[]
+  ): { start: string; end: string } | null {
     // Analyze response history to find optimal time windows
     // This would implement machine learning logic in production
     return null; // Simplified for now
@@ -605,7 +664,10 @@ export class SchedulerService {
     return null; // Simplified for now
   }
 
-  private async applyAdaptiveAdjustments(userId: string, adjustments: AdaptiveAdjustment[]): Promise<void> {
+  private async applyAdaptiveAdjustments(
+    userId: string,
+    adjustments: AdaptiveAdjustment[]
+  ): Promise<void> {
     // Apply learned adjustments to user's configuration
     // This would update the scheduling configuration for this user
   }
@@ -616,7 +678,8 @@ export class SchedulerService {
     deliveredAt: Date
   ): Promise<void> {
     // Update metrics for effectiveness tracking
-    const deliveryTime = deliveredAt.getTime() - notification.scheduledFor.getTime();
+    const deliveryTime =
+      deliveredAt.getTime() - notification.scheduledFor.getTime();
     // Store metrics for analysis
   }
 

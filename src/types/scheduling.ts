@@ -62,7 +62,7 @@ export interface ScheduledNotification {
   status: ScheduleStatus;
 }
 
-export type ScheduleStatus = 
+export type ScheduleStatus =
   | 'pending'
   | 'queued'
   | 'delivered'
@@ -136,7 +136,7 @@ export interface BatchingRule {
   template: string; // Template for batched notifications
 }
 
-export type BatchingCondition = 
+export type BatchingCondition =
   | 'same-project'
   | 'same-type'
   | 'same-priority'

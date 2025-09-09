@@ -13,7 +13,7 @@ export const breakpoints: Breakpoints = {
   sm: 640,
   md: 768,
   lg: 1024,
-  xl: 1280
+  xl: 1280,
 };
 
 export const mediaQueries = {
@@ -23,7 +23,7 @@ export const mediaQueries = {
   lg: `(min-width: ${breakpoints.lg}px) and (max-width: ${breakpoints.xl - 1}px)`,
   xl: `(min-width: ${breakpoints.xl}px)`,
   mobile: `(max-width: ${breakpoints.md - 1}px)`,
-  desktop: `(min-width: ${breakpoints.md}px)`
+  desktop: `(min-width: ${breakpoints.md}px)`,
 };
 
 // Hook for responsive values
@@ -37,7 +37,7 @@ export const useResponsiveValue = <T>(values: {
 }): T => {
   const getResponsiveValue = (): T => {
     const width = window.innerWidth;
-    
+
     if (width < breakpoints.sm && values.xs !== undefined) {
       return values.xs;
     }
@@ -53,7 +53,7 @@ export const useResponsiveValue = <T>(values: {
     if (values.xl !== undefined) {
       return values.xl;
     }
-    
+
     return values.default;
   };
 
@@ -80,41 +80,49 @@ export const getGridColumns = (screenWidth: number): number => {
 };
 
 // Responsive spacing
-export const getSpacing = (size: 'xs' | 'sm' | 'md' | 'lg' | 'xl', isMobile: boolean) => {
+export const getSpacing = (
+  size: 'xs' | 'sm' | 'md' | 'lg' | 'xl',
+  isMobile: boolean
+) => {
   const spacing = {
     xs: isMobile ? 4 : 8,
     sm: isMobile ? 8 : 12,
     md: isMobile ? 12 : 16,
     lg: isMobile ? 16 : 24,
-    xl: isMobile ? 24 : 32
+    xl: isMobile ? 24 : 32,
   };
-  
+
   return spacing[size];
 };
 
 // Responsive font sizes
-export const getFontSize = (size: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'xxl', isMobile: boolean) => {
+export const getFontSize = (
+  size: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'xxl',
+  isMobile: boolean
+) => {
   const fontSizes = {
     xs: isMobile ? 11 : 12,
     sm: isMobile ? 13 : 14,
     md: isMobile ? 15 : 16,
     lg: isMobile ? 17 : 18,
     xl: isMobile ? 19 : 20,
-    xxl: isMobile ? 22 : 24
+    xxl: isMobile ? 22 : 24,
   };
-  
+
   return `${fontSizes[size]}px`;
 };
 
 // Container styles for different screen sizes
-export const getContainerStyles = (screenWidth: number): React.CSSProperties => {
+export const getContainerStyles = (
+  screenWidth: number
+): React.CSSProperties => {
   const isMobile = screenWidth < breakpoints.md;
-  
+
   return {
     maxWidth: screenWidth < breakpoints.xl ? '100%' : '1200px',
     margin: '0 auto',
     padding: isMobile ? '16px' : '24px',
-    width: '100%'
+    width: '100%',
   };
 };
 
@@ -124,12 +132,12 @@ export const getNotificationPosition = (
   screenWidth: number
 ): 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left' => {
   const isMobile = screenWidth < breakpoints.md;
-  
+
   // On mobile, default to top-right for better thumb accessibility
   if (isMobile) {
     return 'top-right';
   }
-  
+
   return preferredPosition;
 };
 
@@ -143,35 +151,36 @@ export const getNotificationWidth = (screenWidth: number): string => {
 // Dashboard widget responsive layout
 export const getDashboardLayout = (screenWidth: number) => {
   const isMobile = screenWidth < breakpoints.md;
-  const isTablet = screenWidth >= breakpoints.md && screenWidth < breakpoints.lg;
-  
+  const isTablet =
+    screenWidth >= breakpoints.md && screenWidth < breakpoints.lg;
+
   return {
     statsGridColumns: isMobile ? 1 : isTablet ? 2 : 4,
     effectivenessLayout: isMobile ? '1fr' : '2fr 1fr',
     teamGridColumns: isMobile ? 1 : isTablet ? 2 : 3,
     padding: isMobile ? '16px' : '24px',
-    gap: isMobile ? '12px' : '16px'
+    gap: isMobile ? '12px' : '16px',
   };
 };
 
 // Settings panel responsive layout
 export const getSettingsLayout = (screenWidth: number) => {
   const isMobile = screenWidth < breakpoints.md;
-  
+
   return {
     maxWidth: isMobile ? '100%' : '600px',
     padding: isMobile ? '16px' : '20px',
     formSectionSpacing: isMobile ? '20px' : '24px',
     labelSize: isMobile ? '14px' : '16px',
     inputHeight: isMobile ? '44px' : '40px', // Larger touch targets on mobile
-    buttonSize: isMobile ? 'large' : 'medium' as 'large' | 'medium'
+    buttonSize: isMobile ? 'large' : ('medium' as 'large' | 'medium'),
   };
 };
 
 // Onboarding responsive adjustments
 export const getOnboardingLayout = (screenWidth: number) => {
   const isMobile = screenWidth < breakpoints.md;
-  
+
   return {
     tooltipWidth: isMobile ? 'calc(100vw - 32px)' : '320px',
     tooltipMaxWidth: isMobile ? '100%' : '400px',
@@ -179,7 +188,7 @@ export const getOnboardingLayout = (screenWidth: number) => {
     padding: isMobile ? '16px' : '20px',
     fontSize: {
       title: isMobile ? '16px' : '18px',
-      description: isMobile ? '14px' : '14px'
-    }
+      description: isMobile ? '14px' : '14px',
+    },
   };
 };

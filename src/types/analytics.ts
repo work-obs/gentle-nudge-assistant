@@ -242,7 +242,12 @@ export interface NotificationFrequency {
 }
 
 export interface RecommendedAction {
-  actionType: 'gentle_reminder' | 'deadline_notification' | 'priority_alert' | 'workload_suggestion' | 'no_action';
+  actionType:
+    | 'gentle_reminder'
+    | 'deadline_notification'
+    | 'priority_alert'
+    | 'workload_suggestion'
+    | 'no_action';
   urgency: 'low' | 'medium' | 'high' | 'critical';
   message: string;
   suggestedActions: string[];
@@ -432,7 +437,7 @@ export interface EscalationAction {
   message?: string;
 }
 
-export type NotificationType = 
+export type NotificationType =
   | 'stale_reminder'
   | 'deadline_warning'
   | 'priority_alert'

@@ -23,7 +23,7 @@ import {
   GentleNudgeError,
   NOTIFICATION_CONSTANTS,
   ScheduledNotification,
-  NotificationHistory
+  NotificationHistory,
 } from '../types';
 
 import { SchedulerService } from './SchedulerService';
@@ -69,10 +69,10 @@ export class NotificationEngine {
   private toneAnalyzer: ToneAnalyzer;
   private storageService: StorageService;
   private jiraApiService: JiraApiService;
-  
+
   private activePipelines: Map<string, NotificationPipeline> = new Map();
   private configuration: EngineConfiguration;
-  
+
   private processingQueue: string[] = [];
   private isProcessing = false;
 
@@ -91,7 +91,7 @@ export class NotificationEngine {
       batchProcessingEnabled: true,
       adaptiveLearningEnabled: true,
       debugMode: false,
-      ...config
+      ...config,
     };
 
     this.startProcessingLoop();
@@ -108,7 +108,8 @@ export class NotificationEngine {
   ): Promise<ServiceResponse<string>> {
     try {
       // Get user preferences
-      const preferencesResult = await this.storageService.getUserPreferences(userId);
+      const preferencesResult =
+        await this.storageService.getUserPreferences(userId);
       if (!preferencesResult.success) {
         return { success: false, error: preferencesResult.error };
       }
@@ -122,7 +123,8 @@ export class NotificationEngine {
       const issueData = issueResult.data!;
 
       // Calculate user workload
-      const workloadResult = await this.jiraApiService.calculateUserWorkload(userId);
+      const workloadResult =
+        await this.jiraApiService.calculateUserWorkload(userId);
       if (!workloadResult.success) {
         return { success: false, error: workloadResult.error };
       }
@@ -130,7 +132,9 @@ export class NotificationEngine {
 
       // Get team metrics if available
       let teamMetrics: TeamMetrics | undefined;
-      const teamMetricsResult = await this.jiraApiService.getTeamMetrics(issueData.project.key);
+      const teamMetricsResult = await this.jiraApiService.getTeamMetrics(
+        issueData.project.key
+      );
       if (teamMetricsResult.success) {
         teamMetrics = teamMetricsResult.data;
       }
@@ -144,15 +148,15 @@ export class NotificationEngine {
         issueData,
         userWorkload: workloadInfo,
         teamMetrics,
-        deadline
+        deadline,
       };
 
       // Create pipeline
       const pipelineId = this.createNotificationPipeline(
-        userId, 
-        issueKey, 
-        type, 
-        priority, 
+        userId,
+        issueKey,
+        type,
+        priority,
         context
       );
 
@@ -169,8 +173,8 @@ export class NotificationEngine {
           details: error.message,
           timestamp: new Date(),
           userId,
-          issueKey
-        }
+          issueKey,
+        },
       };
     }
   }
@@ -178,10 +182,16 @@ export class NotificationEngine {
   /**
    * Processes stale issues for a user and creates appropriate notifications
    */
-  async processStaleIssues(userId: string, staleDays: number = 3): Promise<ServiceResponse<string[]>> {
+  async processStaleIssues(
+    userId: string,
+    staleDays: number = 3
+  ): Promise<ServiceResponse<string[]>> {
     try {
       // Get user's stale issues
-      const staleIssuesResult = await this.jiraApiService.getUserStaleIssues(userId, staleDays);
+      const staleIssuesResult = await this.jiraApiService.getUserStaleIssues(
+        userId,
+        staleDays
+      );
       if (!staleIssuesResult.success) {
         return { success: false, error: staleIssuesResult.error };
       }
@@ -192,11 +202,14 @@ export class NotificationEngine {
       // Create notifications for each stale issue
       for (const issue of staleIssues) {
         // Check if we've already sent a notification recently
-        const historyResult = await this.storageService.getNotificationHistory(issue.key);
+        const historyResult = await this.storageService.getNotificationHistory(
+          issue.key
+        );
         if (historyResult.success && historyResult.data) {
           const history = historyResult.data;
-          const hoursSinceLastNudge = addHours(history.lastNudgeDate, 24) > new Date() ? 0 : 24;
-          
+          const hoursSinceLastNudge =
+            addHours(history.lastNudgeDate, 24) > new Date() ? 0 : 24;
+
           // Skip if we sent a notification in the last 24 hours
           if (hoursSinceLastNudge === 0) {
             continue;
@@ -204,8 +217,8 @@ export class NotificationEngine {
         }
 
         const createResult = await this.createNotification(
-          userId, 
-          issue.key, 
+          userId,
+          issue.key,
           'stale-reminder',
           this.determinePriorityFromStaleness(issue, staleDays)
         );
@@ -224,8 +237,8 @@ export class NotificationEngine {
           message: 'Failed to process stale issues',
           details: error.message,
           timestamp: new Date(),
-          userId
-        }
+          userId,
+        },
       };
     }
   }
@@ -233,13 +246,17 @@ export class NotificationEngine {
   /**
    * Processes deadline warnings for a user
    */
-  async processDeadlineWarnings(userId: string, warningDays: number = 2): Promise<ServiceResponse<string[]>> {
+  async processDeadlineWarnings(
+    userId: string,
+    warningDays: number = 2
+  ): Promise<ServiceResponse<string[]>> {
     try {
-      const deadlineIssuesResult = await this.jiraApiService.getUserIssuesApproachingDeadline(
-        userId, 
-        warningDays
-      );
-      
+      const deadlineIssuesResult =
+        await this.jiraApiService.getUserIssuesApproachingDeadline(
+          userId,
+          warningDays
+        );
+
       if (!deadlineIssuesResult.success) {
         return { success: false, error: deadlineIssuesResult.error };
       }
@@ -252,7 +269,7 @@ export class NotificationEngine {
         if (!deadline) continue;
 
         const priority = this.determinePriorityFromDeadline(deadline);
-        
+
         const createResult = await this.createNotification(
           userId,
           issue.key,
@@ -274,8 +291,8 @@ export class NotificationEngine {
           message: 'Failed to process deadline warnings',
           details: error.message,
           timestamp: new Date(),
-          userId
-        }
+          userId,
+        },
       };
     }
   }
@@ -285,7 +302,10 @@ export class NotificationEngine {
    */
   async createAchievementNotification(
     userId: string,
-    achievementType: 'issue-completed' | 'streak-maintained' | 'team-contribution',
+    achievementType:
+      | 'issue-completed'
+      | 'streak-maintained'
+      | 'team-contribution',
     context: any
   ): Promise<ServiceResponse<string>> {
     try {
@@ -303,7 +323,7 @@ export class NotificationEngine {
         project: context.project || { key: 'GENERAL', name: 'General' },
         issueType: 'Task',
         components: [],
-        labels: []
+        labels: [],
       };
 
       const createResult = await this.createNotification(
@@ -322,8 +342,8 @@ export class NotificationEngine {
           message: 'Failed to create achievement notification',
           details: error.message,
           timestamp: new Date(),
-          userId
-        }
+          userId,
+        },
       };
     }
   }
@@ -331,7 +351,9 @@ export class NotificationEngine {
   /**
    * Gets the status of a notification pipeline
    */
-  async getPipelineStatus(pipelineId: string): Promise<ServiceResponse<NotificationPipeline | null>> {
+  async getPipelineStatus(
+    pipelineId: string
+  ): Promise<ServiceResponse<NotificationPipeline | null>> {
     try {
       const pipeline = this.activePipelines.get(pipelineId);
       return { success: true, data: pipeline || null };
@@ -342,8 +364,8 @@ export class NotificationEngine {
           code: 'PIPELINE_STATUS_ERROR',
           message: 'Failed to get pipeline status',
           details: error.message,
-          timestamp: new Date()
-        }
+          timestamp: new Date(),
+        },
       };
     }
   }
@@ -371,8 +393,8 @@ export class NotificationEngine {
           code: 'USER_RESPONSE_ERROR',
           message: 'Failed to record user response',
           details: error.message,
-          timestamp: new Date()
-        }
+          timestamp: new Date(),
+        },
       };
     }
   }
@@ -380,18 +402,24 @@ export class NotificationEngine {
   /**
    * Gets analytics and effectiveness metrics
    */
-  async getNotificationAnalytics(userId: string, days: number = 30): Promise<ServiceResponse<any>> {
+  async getNotificationAnalytics(
+    userId: string,
+    days: number = 30
+  ): Promise<ServiceResponse<any>> {
     try {
       // Get delivery statistics
-      const deliveryStats = await this.deliveryManager.getDeliveryStatistics(userId, days);
-      
+      const deliveryStats = await this.deliveryManager.getDeliveryStatistics(
+        userId,
+        days
+      );
+
       // Get user analytics from storage
       const userAnalytics = await this.storageService.getUserAnalytics(userId);
 
       const analytics = {
         deliveryStatistics: deliveryStats.success ? deliveryStats.data : null,
         userAnalytics: userAnalytics.success ? userAnalytics.data : null,
-        generatedAt: new Date()
+        generatedAt: new Date(),
       };
 
       return { success: true, data: analytics };
@@ -403,8 +431,8 @@ export class NotificationEngine {
           message: 'Failed to get notification analytics',
           details: error.message,
           timestamp: new Date(),
-          userId
-        }
+          userId,
+        },
       };
     }
   }
@@ -417,7 +445,7 @@ export class NotificationEngine {
     context: NotificationContext
   ): string {
     const pipelineId = `pipeline_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
+
     const pipeline: NotificationPipeline = {
       id: pipelineId,
       userId,
@@ -427,11 +455,11 @@ export class NotificationEngine {
       context,
       stages: {},
       status: 'pending',
-      createdAt: new Date()
+      createdAt: new Date(),
     };
 
     this.activePipelines.set(pipelineId, pipeline);
-    
+
     if (this.configuration.debugMode) {
       console.log(`Created notification pipeline: ${pipelineId}`);
     }
@@ -451,7 +479,7 @@ export class NotificationEngine {
     if (this.processingQueue.length === 0) return;
 
     this.isProcessing = true;
-    
+
     try {
       const pipelineId = this.processingQueue.shift()!;
       await this.processPipeline(pipelineId);
@@ -470,18 +498,21 @@ export class NotificationEngine {
       pipeline.status = 'processing';
 
       // Stage 1: Get user preferences
-      const userPrefs = await this.storageService.getUserPreferences(pipeline.userId);
+      const userPrefs = await this.storageService.getUserPreferences(
+        pipeline.userId
+      );
       if (!userPrefs.success) throw new Error('Failed to get user preferences');
 
       // Stage 2: Scheduling decision
-      const schedulingResult = await this.schedulerService.shouldScheduleNotification(
-        pipeline.userId,
-        pipeline.issueKey,
-        pipeline.type,
-        pipeline.priority,
-        userPrefs.data!,
-        pipeline.context.userWorkload
-      );
+      const schedulingResult =
+        await this.schedulerService.shouldScheduleNotification(
+          pipeline.userId,
+          pipeline.issueKey,
+          pipeline.type,
+          pipeline.priority,
+          userPrefs.data!,
+          pipeline.context.userWorkload
+        );
 
       if (!schedulingResult.success || !schedulingResult.data!.shouldSchedule) {
         pipeline.status = 'completed';
@@ -489,16 +520,23 @@ export class NotificationEngine {
         return;
       }
 
-      pipeline.stages.scheduling = { completed: true, result: schedulingResult.data };
+      pipeline.stages.scheduling = {
+        completed: true,
+        result: schedulingResult.data,
+      };
 
       // Stage 3: Content generation
-      const contentResult = await this.contentGenerator.generateNotificationContent(
-        pipeline.context,
-        userPrefs.data!
-      );
+      const contentResult =
+        await this.contentGenerator.generateNotificationContent(
+          pipeline.context,
+          userPrefs.data!
+        );
 
       if (!contentResult.success) throw new Error('Failed to generate content');
-      pipeline.stages.contentGeneration = { completed: true, result: contentResult.data };
+      pipeline.stages.contentGeneration = {
+        completed: true,
+        result: contentResult.data,
+      };
 
       let content = contentResult.data!;
 
@@ -523,7 +561,10 @@ export class NotificationEngine {
           }
         }
 
-        pipeline.stages.toneValidation = { completed: true, result: toneValidation.data };
+        pipeline.stages.toneValidation = {
+          completed: true,
+          result: toneValidation.data,
+        };
       }
 
       // Stage 5: Create notification object
@@ -535,12 +576,12 @@ export class NotificationEngine {
         createdAt: new Date(),
         scheduledFor: schedulingResult.data!.recommendedTime,
         priority: pipeline.priority,
-        context: pipeline.context
+        context: pipeline.context,
       };
 
       const notification: Notification = {
         metadata,
-        content
+        content,
       };
 
       // Stage 6: Delivery
@@ -553,8 +594,11 @@ export class NotificationEngine {
 
       if (deliveryResult.success) {
         // Record successful notification
-        await this.storageService.recordNotification(pipeline.issueKey, metadata);
-        
+        await this.storageService.recordNotification(
+          pipeline.issueKey,
+          metadata
+        );
+
         pipeline.status = 'completed';
         pipeline.completedAt = new Date();
 
@@ -564,7 +608,6 @@ export class NotificationEngine {
       } else {
         throw new Error('Delivery failed');
       }
-
     } catch (error: any) {
       pipeline.status = 'failed';
       pipeline.error = {
@@ -573,22 +616,29 @@ export class NotificationEngine {
         details: error.message,
         timestamp: new Date(),
         userId: pipeline.userId,
-        issueKey: pipeline.issueKey
+        issueKey: pipeline.issueKey,
       };
 
       console.error(`Pipeline failed: ${pipelineId}`, error);
     }
   }
 
-  private determinePriorityFromStaleness(issue: JiraIssueData, staleDays: number): NotificationPriority {
-    const daysSinceUpdate = Math.floor((Date.now() - issue.updated.getTime()) / (1000 * 60 * 60 * 24));
-    
+  private determinePriorityFromStaleness(
+    issue: JiraIssueData,
+    staleDays: number
+  ): NotificationPriority {
+    const daysSinceUpdate = Math.floor(
+      (Date.now() - issue.updated.getTime()) / (1000 * 60 * 60 * 24)
+    );
+
     if (daysSinceUpdate > staleDays * 3) return 'high';
     if (daysSinceUpdate > staleDays * 2) return 'medium';
     return 'low';
   }
 
-  private determinePriorityFromDeadline(deadline: DeadlineInfo): NotificationPriority {
+  private determinePriorityFromDeadline(
+    deadline: DeadlineInfo
+  ): NotificationPriority {
     if (deadline.isOverdue) return 'urgent';
     if (deadline.daysRemaining <= 1) return 'high';
     if (deadline.daysRemaining <= 3) return 'medium';

@@ -24,7 +24,7 @@ export const useOnboarding = (
   const [isVisible, setIsVisible] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
-  
+
   const steps = customSteps || defaultOnboardingSteps;
 
   // Load onboarding status from storage
@@ -58,21 +58,24 @@ export const useOnboarding = (
   }, [userId, hasCompletedOnboarding, isVisible]);
 
   // Save onboarding status
-  const saveOnboardingStatus = useCallback(async (status: {
-    completed: boolean;
-    currentStep: number;
-    completedAt?: Date;
-  }) => {
-    try {
-      await storage.set(`onboarding_status_${userId}`, {
-        ...status,
-        userId,
-        updatedAt: new Date()
-      });
-    } catch (err) {
-      console.error('Failed to save onboarding status:', err);
-    }
-  }, [userId]);
+  const saveOnboardingStatus = useCallback(
+    async (status: {
+      completed: boolean;
+      currentStep: number;
+      completedAt?: Date;
+    }) => {
+      try {
+        await storage.set(`onboarding_status_${userId}`, {
+          ...status,
+          userId,
+          updatedAt: new Date(),
+        });
+      } catch (err) {
+        console.error('Failed to save onboarding status:', err);
+      }
+    },
+    [userId]
+  );
 
   const showOnboarding = useCallback(() => {
     setIsVisible(true);
@@ -86,33 +89,33 @@ export const useOnboarding = (
   const nextStep = useCallback(() => {
     const newStep = Math.min(currentStep + 1, steps.length - 1);
     setCurrentStep(newStep);
-    
+
     // Save progress
     saveOnboardingStatus({
       completed: false,
-      currentStep: newStep
+      currentStep: newStep,
     });
   }, [currentStep, steps.length, saveOnboardingStatus]);
 
   const previousStep = useCallback(() => {
     const newStep = Math.max(currentStep - 1, 0);
     setCurrentStep(newStep);
-    
+
     // Save progress
     saveOnboardingStatus({
       completed: false,
-      currentStep: newStep
+      currentStep: newStep,
     });
   }, [currentStep, saveOnboardingStatus]);
 
   const skipOnboarding = useCallback(async () => {
     setIsVisible(false);
     setHasCompletedOnboarding(true);
-    
+
     await saveOnboardingStatus({
       completed: true,
       currentStep: steps.length - 1,
-      completedAt: new Date()
+      completedAt: new Date(),
     });
 
     // Track skip event for analytics
@@ -120,7 +123,7 @@ export const useOnboarding = (
       await storage.set(`onboarding_skipped_${userId}`, {
         skippedAt: new Date(),
         skippedAtStep: currentStep,
-        userId
+        userId,
       });
     } catch (err) {
       console.error('Failed to track onboarding skip:', err);
@@ -130,11 +133,11 @@ export const useOnboarding = (
   const completeOnboarding = useCallback(async () => {
     setIsVisible(false);
     setHasCompletedOnboarding(true);
-    
+
     await saveOnboardingStatus({
       completed: true,
       currentStep: steps.length - 1,
-      completedAt: new Date()
+      completedAt: new Date(),
     });
 
     // Track completion for analytics
@@ -142,7 +145,7 @@ export const useOnboarding = (
       await storage.set(`onboarding_completed_${userId}`, {
         completedAt: new Date(),
         totalSteps: steps.length,
-        userId
+        userId,
       });
     } catch (err) {
       console.error('Failed to track onboarding completion:', err);
@@ -150,17 +153,20 @@ export const useOnboarding = (
 
     // Show a subtle success notification
     if (window.dispatchEvent) {
-      window.dispatchEvent(new CustomEvent('gentle-nudge-notification', {
-        detail: {
-          id: `onboarding-complete-${Date.now()}`,
-          type: 'team-encouragement',
-          title: 'Welcome aboard! 🎉',
-          message: 'You\'re all set up with the Gentle Nudge Assistant. We\'re excited to help you stay productive with kindness!',
-          priority: 'low',
-          timestamp: new Date(),
-          dismissible: true
-        }
-      }));
+      window.dispatchEvent(
+        new CustomEvent('gentle-nudge-notification', {
+          detail: {
+            id: `onboarding-complete-${Date.now()}`,
+            type: 'team-encouragement',
+            title: 'Welcome aboard! 🎉',
+            message:
+              "You're all set up with the Gentle Nudge Assistant. We're excited to help you stay productive with kindness!",
+            priority: 'low',
+            timestamp: new Date(),
+            dismissible: true,
+          },
+        })
+      );
     }
   }, [steps.length, userId, saveOnboardingStatus]);
 
@@ -168,10 +174,10 @@ export const useOnboarding = (
     setIsVisible(false);
     setCurrentStep(0);
     setHasCompletedOnboarding(false);
-    
+
     await saveOnboardingStatus({
       completed: false,
-      currentStep: 0
+      currentStep: 0,
     });
 
     // Clean up stored completion/skip data
@@ -194,6 +200,6 @@ export const useOnboarding = (
     previousStep,
     skipOnboarding,
     completeOnboarding,
-    resetOnboarding
+    resetOnboarding,
   };
 };
